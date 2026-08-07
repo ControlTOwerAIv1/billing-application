@@ -1,20 +1,16 @@
 from ninja import NinjaAPI, Schema
 from typing import List, Optional
+from decimal import Decimal
+from django.shortcuts import get_object_or_404
 from apps.core.models import Customer, Product, Order
-from backend.agent.tools import (
-    tool_create_customer, tool_search_customers, tool_soft_delete_customer,
-    tool_create_product, tool_search_products, tool_create_order, tool_list_orders,
-    tool_record_payment, tool_get_customer_ledger
-)
 
-api = NinjaAPI(title="OrderBot AI Supply Chain API", version="2.0.0")
+api = NinjaAPI(title="OrderBot Django API", version="1.0.0")
 
 class CustomerSchema(Schema):
     id: int
     name: str
     phone: str
     state_code: str
-    credit_limit: float
     balance_amount: float
     status: str
 
@@ -22,83 +18,168 @@ class CreateCustomerSchema(Schema):
     name: str
     phone: str
     state_code: Optional[str] = "08"
-    business_name: Optional[str] = ""
-    email: Optional[str] = ""
-    gstin: Optional[str] = ""
-    pan: Optional[str] = ""
-    credit_limit: Optional[float] = 0.0
 
-class ProductSchema(Schema):
-    id: int
-    sku: str
-    name: str
-    category: str
-    loose_price: float
-    full_carton_price: float
-    gst_rate: float
-
-class CreateProductSchema(Schema):
-    sku: str
-    name: str
-    category: Optional[str] = "General"
-    loose_price: Optional[float] = 0.0
-    full_carton_price: Optional[float] = 0.0
-    full_carton_quantity: Optional[int] = 1
-    gst_rate: Optional[float] = 18.0
-
-class OrderItemInputSchema(Schema):
-    product: str
+class CartItemInput(Schema):
+    product_id: int
     quantity: int
-    unit_type: Optional[str] = "loose"
 
-class CreateOrderSchema(Schema):
-    customer_identifier: str
-    items: List[OrderItemInputSchema]
-    order_type: Optional[str] = "sales"
+class PriceCartInput(Schema):
+    customer_id: int
+    items: List[CartItemInput]
 
-class RecordPaymentSchema(Schema):
-    customer_identifier: str
-    amount: float
-    payment_mode: Optional[str] = "Cash"
-    narration: Optional[str] = ""
+class SubmitOrderInput(Schema):
+    customer_id: int
+    items: List[CartItemInput]
+    notes: Optional[str] = None
 
-@api.get("/customers")
-def list_customers(request, query: Optional[str] = ""):
-    return tool_search_customers(query=query)
+@api.get("/customers", response=List[CustomerSchema])
+def list_customers(request):
+    """Returns active customers (soft_deleted=0)."""
+    return list(Customer.objects.all().values())
 
-@api.post("/customers")
+@api.post("/customers", response=CustomerSchema)
 def create_customer(request, payload: CreateCustomerSchema):
-    return tool_create_customer(**payload.dict())
+    """Creates a new customer."""
+    customer = Customer.objects.create(
+        name=payload.name,
+        phone=payload.phone,
+        state_code=payload.state_code
+    )
+    return customer
 
 @api.delete("/customers/{customer_id}")
 def delete_customer(request, customer_id: int):
-    return tool_soft_delete_customer(customer_id=customer_id)
+    """Soft deletes a customer (sets soft_deleted=1)."""
+    customer = Customer.objects.get(id=customer_id)
+    customer.delete()
+    return {"status": "success", "message": f"Customer '{customer.name}' soft deleted."}
 
-@api.get("/products")
-def list_products(request, query: Optional[str] = ""):
-    return tool_search_products(query=query)
+# --- Mini App Cart & Catalog Endpoints ---
 
-@api.post("/products")
-def create_product(request, payload: CreateProductSchema):
-    return tool_create_product(**payload.dict())
+@api.get("/cart/init")
+def cart_init(request, customer_id: int):
+    """
+    Returns initial Mini App state for a customer:
+    - Customer profile details
+    - Usual items (frequently ordered SKUs)
+    - Full product catalog (~300 SKUs) with live rates
+    """
+    customer = get_object_or_404(Customer, id=customer_id)
+    products = Product.objects.filter(is_active=True)
+    
+    catalog = [
+        {
+            "id": p.id,
+            "sku": p.sku,
+            "name": p.name,
+            "category": p.category,
+            "base_price": float(p.base_price),
+            "gst_rate": float(p.gst_rate),
+            "hsn_code": p.hsn_code
+        }
+        for p in products
+    ]
 
-@api.get("/orders")
-def list_orders(request, customer: Optional[str] = "", status: Optional[str] = ""):
-    return tool_list_orders(customer_identifier=customer, status=status)
+    # Pre-fill top usual items (fallback to first 3 products if new customer)
+    usual_items = catalog[:3] if catalog else []
 
-@api.post("/orders")
-def create_order(request, payload: CreateOrderSchema):
-    items_list = [item.dict() for item in payload.items]
-    return tool_create_order(
-        customer_identifier=payload.customer_identifier,
-        items=items_list,
-        order_type=payload.order_type
+    return {
+        "customer": {
+            "id": customer.id,
+            "name": customer.name,
+            "phone": customer.phone,
+            "state_code": customer.state_code,
+            "balance_amount": float(customer.balance_amount)
+        },
+        "usual_items": usual_items,
+        "catalog": catalog
+    }
+
+@api.post("/cart/price")
+def price_cart(request, payload: PriceCartInput):
+    """
+    Computes authoritative line totals and GST server-side.
+    Intra-state (CGST 9% + SGST 9%) vs Inter-state (IGST 18%).
+    """
+    customer = get_object_or_404(Customer, id=payload.customer_id)
+    subtotal = Decimal("0.00")
+    total_cgst = Decimal("0.00")
+    total_sgst = Decimal("0.00")
+    total_igst = Decimal("0.00")
+
+    # Assuming business tenant state code is "08" (Rajasthan)
+    seller_state_code = "08"
+    is_intra_state = (customer.state_code == seller_state_code)
+
+    line_details = []
+    for item in payload.items:
+        product = get_object_or_404(Product, id=item.product_id)
+        qty = item.quantity
+        rate = product.base_price
+
+        line_subtotal = rate * qty
+        gst_pct = product.gst_rate
+        line_gst = (line_subtotal * gst_pct) / Decimal("100.00")
+        line_total = line_subtotal + line_gst
+
+        if is_intra_state:
+            cgst = line_gst / Decimal("2.00")
+            sgst = line_gst / Decimal("2.00")
+            igst = Decimal("0.00")
+            total_cgst += cgst
+            total_sgst += sgst
+        else:
+            cgst = Decimal("0.00")
+            sgst = Decimal("0.00")
+            igst = line_gst
+            total_igst += igst
+
+        subtotal += line_subtotal
+        line_details.append({
+            "product_id": product.id,
+            "name": product.name,
+            "sku": product.sku,
+            "quantity": qty,
+            "unit_rate": float(rate),
+            "line_subtotal": float(line_subtotal),
+            "line_gst": float(line_gst),
+            "line_total": float(line_total)
+        })
+
+    grand_total = subtotal + total_cgst + total_sgst + total_igst
+
+    return {
+        "subtotal": float(subtotal),
+        "cgst_amount": float(total_cgst),
+        "sgst_amount": float(total_sgst),
+        "igst_amount": float(total_igst),
+        "total_amount": float(grand_total),
+        "is_intra_state": is_intra_state,
+        "lines": line_details
+    }
+
+@api.post("/cart/submit")
+def submit_order(request, payload: SubmitOrderInput):
+    """Persists a new order from Mini App and generates invoice voucher number."""
+    customer = get_object_or_404(Customer, id=payload.customer_id)
+    
+    # Calculate price
+    price_res = price_cart(request, PriceCartInput(customer_id=customer.id, items=payload.items))
+    
+    import random
+    voucher_no = f"ORD-2026-{random.randint(1000, 9999)}"
+
+    order = Order.objects.create(
+        customer=customer,
+        voucher_no=voucher_no,
+        total_amount=Decimal(str(price_res["total_amount"])),
+        status="placed"
     )
 
-@api.post("/payments")
-def record_payment(request, payload: RecordPaymentSchema):
-    return tool_record_payment(**payload.dict())
-
-@api.get("/customers/{customer_id}/ledger")
-def get_customer_ledger(request, customer_id: str):
-    return tool_get_customer_ledger(customer_identifier=customer_id)
+    return {
+        "status": "success",
+        "order_id": order.id,
+        "voucher_no": order.voucher_no,
+        "total_amount": float(order.total_amount),
+        "message": f"Order #{order.voucher_no} placed successfully!"
+    }

@@ -3,7 +3,6 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Read .env if available
 ENV_PATH = BASE_DIR / ".env"
 if ENV_PATH.exists():
     with open(ENV_PATH, "r", encoding="utf-8") as f:
@@ -44,7 +43,7 @@ ROOT_URLCONF = "orderbot.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [BASE_DIR / "templates", BASE_DIR / "miniapp"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
