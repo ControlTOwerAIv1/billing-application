@@ -1,8 +1,16 @@
-from ninja import NinjaAPI, Schema
-from typing import List, Optional
+import json
+import random
+import urllib.request
+import urllib.parse
 from decimal import Decimal
+from typing import List, Optional
+from ninja import NinjaAPI, Schema
 from django.shortcuts import get_object_or_404
-from apps.core.models import Customer, Product, Order
+import requests
+from django.http import HttpResponse
+from apps.core.models import Customer, Product, Order, OrderItem
+from backend.config import TELEGRAM_BOT_TOKEN
+from backend.invoice_generator import generate_order_pdf_bytes
 
 api = NinjaAPI(title="OrderBot Django API", version="1.0.0")
 
@@ -30,7 +38,45 @@ class PriceCartInput(Schema):
 class SubmitOrderInput(Schema):
     customer_id: int
     items: List[CartItemInput]
+    chat_id: Optional[int] = None
     notes: Optional[str] = None
+
+def send_telegram_order_notification(chat_id: int, order: Order):
+    """Helper to send instant Telegram chat notification and PDF invoice document when order is placed."""
+    if not TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN.startswith("your_"):
+        return
+
+    voucher_no = order.voucher_no
+    customer_name = order.customer.name
+    total_amount = float(order.total_amount)
+
+    text = (
+        f"🎉 <b>Your Order Has Been Successfully Created!</b>\n\n"
+        f"📦 <b>Voucher No:</b> #{voucher_no}\n"
+        f"👤 <b>Customer:</b> {customer_name}\n"
+        f"💰 <b>Total Amount:</b> ₹{total_amount:,.2f}\n"
+        f"🚚 <b>Status:</b> Placed & Sent to Wholesaler\n\n"
+        f"📄 <b>Tax Invoice PDF</b> is attached below. You can download or forward it directly!"
+    )
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    data = urllib.parse.urlencode({"chat_id": chat_id, "text": text, "parse_mode": "HTML"}).encode("utf-8")
+    headers = {"User-Agent": "Mozilla/5.0"}
+    try:
+        req = urllib.request.Request(url, data=data, headers=headers)
+        urllib.request.urlopen(req, timeout=5)
+    except Exception as e:
+        print(f"[Telegram Notify Error]: {e}")
+
+    # Send PDF Document via Telegram sendDocument API
+    try:
+        pdf_bytes = generate_order_pdf_bytes(order)
+        doc_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument"
+        filename = f"Invoice_{voucher_no}.pdf"
+        files = {"document": (filename, pdf_bytes, "application/pdf")}
+        payload = {"chat_id": chat_id, "caption": f"📄 Tax Invoice #{voucher_no}"}
+        requests.post(doc_url, data=payload, files=files, timeout=10)
+    except Exception as e:
+        print(f"[Telegram PDF Send Error]: {e}")
 
 @api.get("/customers", response=List[CustomerSchema])
 def list_customers(request):
@@ -54,16 +100,9 @@ def delete_customer(request, customer_id: int):
     customer.delete()
     return {"status": "success", "message": f"Customer '{customer.name}' soft deleted."}
 
-# --- Mini App Cart & Catalog Endpoints ---
-
 @api.get("/cart/init")
 def cart_init(request, customer_id: int):
-    """
-    Returns initial Mini App state for a customer:
-    - Customer profile details
-    - Usual items (frequently ordered SKUs)
-    - Full product catalog (~300 SKUs) with live rates
-    """
+    """Returns initial Mini App state for a customer."""
     customer = get_object_or_404(Customer, id=customer_id)
     products = Product.objects.filter(is_active=True)
     
@@ -80,7 +119,6 @@ def cart_init(request, customer_id: int):
         for p in products
     ]
 
-    # Pre-fill top usual items (fallback to first 3 products if new customer)
     usual_items = catalog[:3] if catalog else []
 
     return {
@@ -97,17 +135,13 @@ def cart_init(request, customer_id: int):
 
 @api.post("/cart/price")
 def price_cart(request, payload: PriceCartInput):
-    """
-    Computes authoritative line totals and GST server-side.
-    Intra-state (CGST 9% + SGST 9%) vs Inter-state (IGST 18%).
-    """
+    """Computes line totals and GST server-side."""
     customer = get_object_or_404(Customer, id=payload.customer_id)
     subtotal = Decimal("0.00")
     total_cgst = Decimal("0.00")
     total_sgst = Decimal("0.00")
     total_igst = Decimal("0.00")
 
-    # Assuming business tenant state code is "08" (Rajasthan)
     seller_state_code = "08"
     is_intra_state = (customer.state_code == seller_state_code)
 
@@ -160,13 +194,10 @@ def price_cart(request, payload: PriceCartInput):
 
 @api.post("/cart/submit")
 def submit_order(request, payload: SubmitOrderInput):
-    """Persists a new order from Mini App and generates invoice voucher number."""
+    """Persists a new order from Mini App and sends Telegram chat notification with PDF invoice."""
     customer = get_object_or_404(Customer, id=payload.customer_id)
-    
-    # Calculate price
     price_res = price_cart(request, PriceCartInput(customer_id=customer.id, items=payload.items))
     
-    import random
     voucher_no = f"ORD-2026-{random.randint(1000, 9999)}"
 
     order = Order.objects.create(
@@ -176,10 +207,50 @@ def submit_order(request, payload: SubmitOrderInput):
         status="placed"
     )
 
+    for item in payload.items:
+        product = get_object_or_404(Product, id=item.product_id)
+        unit_price = product.base_price
+        taxable_amt = unit_price * Decimal(item.quantity)
+        OrderItem.objects.create(
+            order=order,
+            product=product,
+            unit_type="loose",
+            quantity=item.quantity,
+            unit_price=unit_price,
+            taxable_amount=taxable_amt,
+            gst_rate=product.gst_rate
+        )
+
+    order.calculate_taxes_and_totals(tenant_state_code="08")
+
+    # Determine chat_id for Telegram notification
+    target_chat_id = payload.chat_id
+    if not target_chat_id and customer.phone and customer.phone.startswith("+91-"):
+        try:
+            target_chat_id = int(customer.phone.replace("+91-", ""))
+        except ValueError:
+            pass
+
+    if target_chat_id:
+        send_telegram_order_notification(target_chat_id, order)
+
+    pdf_url = f"/api/orders/{order.id}/pdf"
+
     return {
         "status": "success",
         "order_id": order.id,
         "voucher_no": order.voucher_no,
         "total_amount": float(order.total_amount),
+        "pdf_url": pdf_url,
         "message": f"Order #{order.voucher_no} placed successfully!"
     }
+
+@api.get("/orders/{order_id}/pdf")
+def download_order_pdf(request, order_id: int):
+    """Generates and streams the PDF invoice for a given order ID."""
+    order = get_object_or_404(Order, id=order_id)
+    pdf_bytes = generate_order_pdf_bytes(order)
+    
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="Invoice_{order.voucher_no}.pdf"'
+    return response

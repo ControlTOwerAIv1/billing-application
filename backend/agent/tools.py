@@ -5,6 +5,8 @@ import uuid
 from decimal import Decimal
 from pathlib import Path
 
+from langchain_core.tools import tool
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
@@ -48,7 +50,6 @@ def tool_create_customer(name: str, phone: str, state_code: str = "08", business
         if credit_limit > 0: customer.credit_limit = Decimal(str(credit_limit))
         customer.save()
 
-    # Ensure linked Debtors Account exists
     Account.objects.get_or_create(
         name=f"Debtor - {customer.name}",
         customer=customer,
@@ -158,11 +159,7 @@ def tool_search_products(query: str = "") -> dict:
     return {"status": "success", "count": len(products), "products": products}
 
 def tool_create_order(customer_identifier: str, items: list, order_type: str = "sales", tenant_state_code: str = "08") -> dict:
-    """
-    Creates an Order with line items, multi-tier pricing, tax calculation (CGST+SGST vs IGST),
-    and credit limit verification.
-    """
-    # 1. Resolve Customer
+    """Creates an Order with line items, multi-tier pricing, and tax calculation."""
     cust = Customer.objects.filter(name__icontains=customer_identifier).first()
     if not cust and customer_identifier.isdigit():
         cust = Customer.objects.filter(id=int(customer_identifier)).first()
@@ -172,10 +169,7 @@ def tool_create_order(customer_identifier: str, items: list, order_type: str = "
     if not cust:
         return {"status": "error", "message": f"Customer matching '{customer_identifier}' not found."}
 
-    # 2. Generate Voucher Number
     voucher_no = f"INV-{uuid.uuid4().hex[:8].upper()}"
-
-    # 3. Create Order Shell
     o_type = OrderType.ADVANCE_PURCHASE if "advance" in order_type.lower() else OrderType.SALES
     order = Order.objects.create(
         customer=cust,
@@ -184,9 +178,7 @@ def tool_create_order(customer_identifier: str, items: list, order_type: str = "
         status=OrderStatus.PLACED
     )
 
-    # 4. Add Line Items
     created_items = []
-
     for item in items:
         prod_id_or_sku = item.get("product") or item.get("sku") or item.get("product_id")
         qty = int(item.get("quantity", 1))
@@ -223,18 +215,16 @@ def tool_create_order(customer_identifier: str, items: list, order_type: str = "
             "taxable_amount": float(taxable_amt)
         })
 
-    # 5. Calculate Taxes & Grand Total
     order.calculate_taxes_and_totals(tenant_state_code=tenant_state_code)
-
-    # 6. Update Customer Running Balance
     cust.balance_amount += order.total_amount
     cust.save()
 
-    # 7. Verify Credit Limit
     credit_warning = None
     if cust.credit_limit > Decimal("0.00"):
         if cust.balance_amount > cust.credit_limit:
             credit_warning = f"WARNING: Customer balance (Rs.{float(cust.balance_amount):.2f}) exceeds credit limit (Rs.{float(cust.credit_limit):.2f})."
+
+    pdf_url = f"/api/orders/{order.id}/pdf"
 
     return {
         "status": "success",
@@ -246,6 +236,8 @@ def tool_create_order(customer_identifier: str, items: list, order_type: str = "
         "sgst_amount": float(order.sgst_amount),
         "igst_amount": float(order.igst_amount),
         "total_amount": float(order.total_amount),
+        "pdf_url": pdf_url,
+        "invoice_pdf_download_link": f"http://127.0.0.1:8000{pdf_url}",
         "credit_warning": credit_warning,
         "items": created_items
     }
@@ -273,7 +265,7 @@ def tool_list_orders(customer_identifier: str = "", status: str = "") -> dict:
     return {"status": "success", "count": len(orders), "orders": orders}
 
 def tool_record_payment(customer_identifier: str, amount: float, payment_mode: str = "Cash", voucher_number: str = "", narration: str = "") -> dict:
-    """Records a payment received from a customer, creates double-entry ledger entries, and reduces customer balance."""
+    """Records a payment received from a customer."""
     cust = Customer.objects.filter(name__icontains=customer_identifier).first()
     if not cust and customer_identifier.isdigit():
         cust = Customer.objects.filter(id=int(customer_identifier)).first()
@@ -284,20 +276,17 @@ def tool_record_payment(customer_identifier: str, amount: float, payment_mode: s
     if pay_amount <= 0:
         return {"status": "error", "message": "Payment amount must be greater than 0."}
 
-    # Cash / Bank Account
     cash_bank_acct, _ = Account.objects.get_or_create(
         name=f"{payment_mode.capitalize()} Account",
         defaults={"account_group": AccountGroup.CASH if "cash" in payment_mode.lower() else AccountGroup.BANK}
     )
 
-    # Customer Debtor Account
     debtor_acct, _ = Account.objects.get_or_create(
         name=f"Debtor - {cust.name}",
         customer=cust,
         defaults={"account_group": AccountGroup.DEBTORS}
     )
 
-    # Debit Cash/Bank, Credit Customer Debtor
     v_no = voucher_number or f"PAY-{uuid.uuid4().hex[:6].upper()}"
 
     Ledger.objects.create(
@@ -318,7 +307,6 @@ def tool_record_payment(customer_identifier: str, amount: float, payment_mode: s
         narration=narration or f"Payment credited against {cust.name}"
     )
 
-    # Reduce Customer balance
     cust.balance_amount = max(Decimal("0.00"), cust.balance_amount - pay_amount)
     cust.save()
 
@@ -360,7 +348,7 @@ def tool_get_customer_ledger(customer_identifier: str) -> dict:
         "entries": result_entries
     }
 
-# --- OpenAI / LiteLLM JSON Tool Definitions ---
+# --- OpenAI / LiteLLM Schemas ---
 
 TOOLS_SCHEMA = [
     {
@@ -521,6 +509,17 @@ TOOLS_SCHEMA = [
     }
 ]
 
+# --- Native Anthropic SDK Tool Schema ---
+
+ANTHROPIC_TOOLS_SCHEMA = [
+    {
+        "name": t["function"]["name"],
+        "description": t["function"]["description"],
+        "input_schema": t["function"]["parameters"]
+    }
+    for t in TOOLS_SCHEMA
+]
+
 EXECUTE_TOOL_MAP = {
     "create_customer": tool_create_customer,
     "search_customers": tool_search_customers,
@@ -532,3 +531,8 @@ EXECUTE_TOOL_MAP = {
     "record_payment": tool_record_payment,
     "get_customer_ledger": tool_get_customer_ledger,
 }
+
+LANGCHAIN_TOOLS = [
+    tool(func) for func in EXECUTE_TOOL_MAP.values()
+]
+

@@ -38,7 +38,7 @@ def main():
     print("-" * 65)
 
     agent = OrderBotAgent()
-    chat_history = []
+    session_thread_id = "cli_session"
 
     while True:
         try:
@@ -50,19 +50,16 @@ def main():
                 print("\nExiting OrderBot CLI. Goodbye!")
                 break
 
-            result = agent.process_message(user_input, chat_history=chat_history)
+            result = agent.process_message(user_input, thread_id=session_thread_id)
 
             if result.get("status") == "success":
-                chat_history = result.get("updated_history", chat_history)
-
                 # Show tool calls if AI decided to invoke any database tools
                 tool_calls = result.get("tool_calls", [])
                 if tool_calls:
                     print("\n🤖 [AI Agent Tool Execution Trace]:")
                     for tc in tool_calls:
-                        print(f"   ⚙️  Executed Tool: {tc['tool']}")
-                        print(f"      Arguments:     {json.dumps(tc['args'])}")
-                        print(f"      Database Out:  {json.dumps(tc['result'])}")
+                        print(f"   ⚙️  Executed Tool: {tc.get('tool')}")
+                        print(f"      Arguments:     {json.dumps(tc.get('args'))}")
 
                 print(f"\nOrderBot AI: {result.get('response')}")
             else:
