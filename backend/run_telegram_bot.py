@@ -16,6 +16,7 @@ django.setup()
 
 from backend.config import TELEGRAM_BOT_TOKEN
 from backend.agent.agent import OrderBotAgent
+from backend.formatter import markdown_to_telegram_html
 from apps.core.models import Customer, Order
 
 def call_telegram_api(method: str, params: dict = None, max_retries: int = 3) -> dict:
@@ -151,7 +152,8 @@ def main():
                     response_dict = agent.process_message(user_text, thread_id=str(chat_id))
                     reply_text = response_dict.get("response") or response_dict.get("message") or "Done."
 
-                    formatted_reply = f"<b>OrderBot</b>:\n{reply_text}"
+                    html_reply = markdown_to_telegram_html(reply_text)
+                    formatted_reply = f"<b>OrderBot AI</b>:\n{html_reply}"
                     send_message(chat_id, formatted_reply)
 
             time.sleep(1.5)

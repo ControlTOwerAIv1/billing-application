@@ -27,6 +27,9 @@ Capabilities & Guidelines:
 6. BEHAVIOR: Be helpful, concise, professional, and format key details clearly with bullet points.
 """
 
+import warnings
+warnings.filterwarnings("ignore", message=".*uses fixed sampling defaults.*", category=UserWarning)
+
 def get_langchain_model(model_name: str):
     """
     Instantiates appropriate LangChain ChatModel based on model_name prefix.
@@ -40,7 +43,7 @@ def get_langchain_model(model_name: str):
         api_key = GEMINI_API_KEY or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         if api_key and not os.getenv("GOOGLE_API_KEY"):
             os.environ["GOOGLE_API_KEY"] = api_key
-        return ChatGoogleGenerativeAI(model=raw_name, google_api_key=api_key, temperature=0.0)
+        return ChatGoogleGenerativeAI(model=raw_name, google_api_key=api_key)
 
     elif "claude" in model_str.lower() or "anthropic" in model_str.lower():
         from langchain_anthropic import ChatAnthropic
@@ -55,7 +58,7 @@ def get_langchain_model(model_name: str):
     else:
         from langchain_google_genai import ChatGoogleGenerativeAI
         api_key = GEMINI_API_KEY or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-        return ChatGoogleGenerativeAI(model=raw_name or "gemini-2.5-flash", google_api_key=api_key, temperature=0.0)
+        return ChatGoogleGenerativeAI(model=raw_name or "gemini-2.5-flash", google_api_key=api_key)
 
 class OrderBotAgent:
     def __init__(self, model_name: str = None, checkpointer = None):
