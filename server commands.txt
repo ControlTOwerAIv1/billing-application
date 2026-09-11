@@ -1,0 +1,8 @@
+# 1. Start Django Backend & Mini App Server
+python manage.py runserver
+
+# 2. Start Live Telegram Bot Listener (run in a separate terminal)
+python manage.py run_telegram_bot
+
+# 3. (Optional) Run CLI Interactive AI Chat Agent
+python manage.py run_chat

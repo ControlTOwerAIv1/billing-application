@@ -38,7 +38,14 @@ def markdown_to_telegram_html(text: str) -> str:
     text = html.escape(text)
 
     # Convert Markdown Links: [label](url) -> <a href="url">label</a>
-    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2">\1</a>', text)
+    def format_link(match):
+        label = match.group(1)
+        url = match.group(2).strip()
+        if url.startswith("/"):
+            url = f"http://127.0.0.1:8000{url}"
+        return f'<a href="{url}">{label}</a>'
+
+    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', format_link, text)
 
     # Convert Bold: **text** or __text__ -> <b>text</b>
     text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text, flags=re.DOTALL)

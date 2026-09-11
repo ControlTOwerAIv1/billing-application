@@ -32,6 +32,15 @@ def test_pdf_generation():
     assert len(pdf_bytes) > 500, "PDF size should be at least 500 bytes"
     assert pdf_bytes.startswith(b"%PDF"), "PDF output must start with standard %PDF header magic bytes"
 
+    # Also test multi-item multi-category order
+    multi_item_order = Order.objects.filter(items__isnull=False).filter(items__product__isnull=False).distinct()
+    for candidate in multi_item_order:
+        if candidate.items.count() > 1:
+            multi_order_pdf = generate_order_pdf_bytes(candidate)
+            assert multi_order_pdf.startswith(b"%PDF")
+            print(f"Verified multi-item order #{candidate.voucher_no} ({candidate.items.count()} items): {len(multi_order_pdf)} bytes")
+            break
+
     print("\n" + "=" * 65)
     print("     PDF INVOICE GENERATION TEST COMPLETED SUCCESSFULLY!  ")
     print("=" * 65)

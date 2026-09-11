@@ -33,6 +33,20 @@ class Tenant(SoftDeleteModel):
     def __str__(self):
         return self.name
 
+class Transport(SoftDeleteModel):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True, blank=True, related_name="transports")
+    name = models.CharField(max_length=150, unique=True, help_text="Transport or Logistics Agency Name")
+    phone = models.CharField(max_length=30, blank=True, null=True, help_text="Contact Phone / Mobile")
+    contact_person = models.CharField(max_length=100, blank=True, null=True, help_text="Booking Agent / Driver / Manager")
+    vehicle_number = models.CharField(max_length=50, blank=True, null=True, help_text="Vehicle / Truck / Lorry No.")
+    destination_notes = models.CharField(max_length=200, blank=True, null=True, help_text="Routes covered / Hub locations")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        detail = f" ({self.phone})" if self.phone else ""
+        return f"{self.name}{detail}"
+
 class CustomerStatus(models.TextChoices):
     PENDING = "pending", "Pending Approval"
     APPROVED = "approved", "Approved"
@@ -40,11 +54,13 @@ class CustomerStatus(models.TextChoices):
 
 class Customer(SoftDeleteModel):
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="customers", null=True, blank=True)
+    transport = models.ForeignKey(Transport, on_delete=models.SET_NULL, null=True, blank=True, related_name="customers", help_text="Default preferred transport for shipping")
     phone = models.CharField(max_length=20, db_index=True)
     name = models.CharField(max_length=150)
     business_name = models.CharField(max_length=200, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     address = models.TextField(blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True, default="")
     state_code = models.CharField(max_length=2, default="08")
     gstin = models.CharField(max_length=15, blank=True, null=True)
     pan = models.CharField(max_length=10, blank=True, null=True)
@@ -54,13 +70,15 @@ class Customer(SoftDeleteModel):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.name} ({self.phone})"
+        loc = f" ({self.city}, {self.state_code})" if self.city else f" ({self.state_code})"
+        return f"{self.name}{loc} - {self.phone}"
 
 class Product(SoftDeleteModel):
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="products", null=True, blank=True)
     sku = models.CharField(max_length=50, db_index=True)
     name = models.CharField(max_length=200)
     category = models.CharField(max_length=100, default="General")
+    image_url = models.CharField(max_length=1000, blank=True, null=True, default="")
     base_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     
     # Multi-tier Pricing
@@ -128,6 +146,7 @@ class OrderType(models.TextChoices):
 class Order(SoftDeleteModel):
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True, blank=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="orders")
+    transport = models.ForeignKey(Transport, on_delete=models.SET_NULL, null=True, blank=True, related_name="orders", help_text="Assigned transport carrier for this order shipment")
     voucher_no = models.CharField(max_length=50, unique=True)
     order_type = models.CharField(max_length=30, choices=OrderType.choices, default=OrderType.SALES)
     status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.PLACED)
@@ -137,7 +156,11 @@ class Order(SoftDeleteModel):
     cgst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     sgst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     igst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    packing_charge = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+    gst_enabled = models.BooleanField(default=True, help_text="Whether GST is applied and shown on the PDF invoice")
+    custom_gst_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Custom GST rate percentage applied to the order")
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def calculate_taxes_and_totals(self, tenant_state_code: str = "08"):
@@ -149,17 +172,27 @@ class Order(SoftDeleteModel):
 
         is_intra_state = (self.customer.state_code == tenant_state_code)
 
+        has_zero_rate = (self.custom_gst_rate is not None and self.custom_gst_rate <= Decimal("0.00"))
+        if not self.gst_enabled or has_zero_rate:
+            self.gst_enabled = False
+
         for item in items:
             subtotal += item.taxable_amount
-            if is_intra_state:
-                half_rate = item.gst_rate / Decimal("2.0")
-                item.cgst_amount = (item.taxable_amount * half_rate / Decimal("100.0")).quantize(Decimal("0.01"))
-                item.sgst_amount = (item.taxable_amount * half_rate / Decimal("100.0")).quantize(Decimal("0.01"))
-                item.igst_amount = Decimal("0.00")
-            else:
+            if not self.gst_enabled:
                 item.cgst_amount = Decimal("0.00")
                 item.sgst_amount = Decimal("0.00")
-                item.igst_amount = (item.taxable_amount * item.gst_rate / Decimal("100.0")).quantize(Decimal("0.01"))
+                item.igst_amount = Decimal("0.00")
+            else:
+                effective_rate = self.custom_gst_rate if self.custom_gst_rate is not None else item.gst_rate
+                if is_intra_state:
+                    half_rate = effective_rate / Decimal("2.0")
+                    item.cgst_amount = (item.taxable_amount * half_rate / Decimal("100.0")).quantize(Decimal("0.01"))
+                    item.sgst_amount = (item.taxable_amount * half_rate / Decimal("100.0")).quantize(Decimal("0.01"))
+                    item.igst_amount = Decimal("0.00")
+                else:
+                    item.cgst_amount = Decimal("0.00")
+                    item.sgst_amount = Decimal("0.00")
+                    item.igst_amount = (item.taxable_amount * effective_rate / Decimal("100.0")).quantize(Decimal("0.01"))
 
             item.total_amount = item.taxable_amount + item.cgst_amount + item.sgst_amount + item.igst_amount
             item.save()
@@ -172,7 +205,10 @@ class Order(SoftDeleteModel):
         self.cgst_amount = cgst_total
         self.sgst_amount = sgst_total
         self.igst_amount = igst_total
-        self.total_amount = subtotal + cgst_total + sgst_total + igst_total
+        packing = self.packing_charge or Decimal("0.00")
+        discount = self.discount_amount or Decimal("0.00")
+        calc_total = subtotal + cgst_total + sgst_total + igst_total + packing - discount
+        self.total_amount = max(Decimal("0.00"), calc_total)
         self.save()
 
     def __str__(self):
