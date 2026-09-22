@@ -253,9 +253,30 @@
       padding: 3px 8px;
       border-radius: 6px;
       font-size: 0.68rem;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--accent);
       border: 1px solid rgba(255, 255, 255, 0.08);
+      max-width: 60%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .product-subcat-tag {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(30, 41, 59, 0.88);
+      backdrop-filter: blur(8px);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      max-width: 65%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .gst-tag {
       position: absolute;
@@ -277,12 +298,36 @@
       flex: 1;
       justify-content: space-between;
     }
-    .product-sku { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-bottom: 2px; }
+    .product-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      gap: 4px;
+    }
+    .product-sku { font-size: 0.68rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .product-stock {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .product-stock.in-stock {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .product-stock.out-stock {
+      background: rgba(148, 163, 184, 0.1);
+      color: #94a3b8;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
     .product-name {
       font-weight: 700;
       font-size: 0.88rem;
       color: var(--text-main);
-      margin-bottom: 8px;
+      margin-bottom: 4px;
       line-height: 1.35;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -1153,14 +1198,20 @@
       }
     }
 
+    function safeCatId(str) {
+      return String(str).replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+
     function renderCategories(categories) {
       const container = document.getElementById('categories-bar');
       document.getElementById('count-all').innerText = catalogData.length;
 
       const pillsHtml = (categories || []).map(cat => {
-        const count = catalogData.filter(p => p.category === cat).length;
+        const count = catalogData.filter(p => p.category === cat || p.group_alias === cat).length;
+        const sid = 'cat-btn-' + safeCatId(cat);
+        const escapedCat = String(cat).replace(/'/g, "\\'");
         return `
-          <button class="category-pill" id="cat-btn-${cat.replace(/\s+/g, '-')}" onclick="filterCategory('${cat}')">
+          <button class="category-pill" id="${sid}" onclick="filterCategory('${escapedCat}')">
             ${cat} <span class="category-count">${count}</span>
           </button>
         `;
@@ -1177,7 +1228,7 @@
     function filterCategory(cat) {
       activeCategory = cat;
       document.querySelectorAll('.category-pill').forEach(btn => btn.classList.remove('active'));
-      const activeBtn = document.getElementById(`cat-btn-${cat.replace(/\s+/g, '-')}`);
+      const activeBtn = document.getElementById('cat-btn-' + safeCatId(cat));
       if (activeBtn) activeBtn.classList.add('active');
       renderCatalog();
     }
@@ -1193,13 +1244,15 @@
       let filtered = catalogData;
 
       if (activeCategory !== 'ALL') {
-        filtered = filtered.filter(p => p.category === activeCategory);
+        filtered = filtered.filter(p => p.category === activeCategory || p.group_alias === activeCategory || p.category_alias === activeCategory);
       }
       if (query) {
         filtered = filtered.filter(p =>
           p.name.toLowerCase().includes(query) ||
           p.sku.toLowerCase().includes(query) ||
-          p.category.toLowerCase().includes(query)
+          (p.group_alias && p.group_alias.toLowerCase().includes(query)) ||
+          (p.category_alias && p.category_alias.toLowerCase().includes(query)) ||
+          (p.category && p.category.toLowerCase().includes(query))
         );
       }
 
@@ -1216,19 +1269,30 @@
         const qty = cartState[p.id] || 0;
         const currentPrice = tier === 'carton' ? p.full_carton_price : p.loose_price;
         const unitLabel = tier === 'carton' ? `1 Carton (${p.full_carton_quantity} pcs)` : 'per loose pc';
-        const imgSrc = p.image_url || DEFAULT_IMG;
+        const imgSrc = p.photo_url || p.image_url || DEFAULT_IMG;
+        const groupLabel = p.group_alias || p.category || 'Product';
+        const subcatLabel = p.category_alias;
+        const stockQty = p.closing_qty || 0;
+        const opQty = p.opening_qty || 0;
 
         return `
           <div class="product-card">
             <div class="product-thumb-wrap">
               <img src="${imgSrc}" class="product-img" alt="${p.name}" onerror="this.src='${DEFAULT_IMG}'">
-              <div class="product-category-tag">${p.category}</div>
+              <div class="product-category-tag" title="Group: ${groupLabel}">${groupLabel}</div>
+              ${subcatLabel ? `<div class="product-subcat-tag" title="Category: ${subcatLabel}">${subcatLabel}</div>` : ''}
               <div class="gst-tag">GST ${p.gst_rate}%</div>
             </div>
 
             <div class="product-body">
-              <div class="product-sku">SKU: ${p.sku}</div>
+              <div class="product-meta-row">
+                <span class="product-sku" title="${p.sku}">${p.sku}</span>
+                <span class="product-stock ${stockQty > 0 ? 'in-stock' : 'out-stock'}">
+                  ${stockQty > 0 ? `📦 ${stockQty.toLocaleString()} in stock` : '0 in stock'}
+                </span>
+              </div>
               <div class="product-name" title="${p.name}">${p.name}</div>
+              ${opQty > 0 ? `<div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 6px;">Opening: ${opQty.toLocaleString()}</div>` : ''}
 
               <!-- Multi-tier Selector -->
               <div class="tier-toggle">
@@ -1460,13 +1524,14 @@
 
       container.innerHTML = lines.map(line => {
         const p = catalogData.find(prod => prod.id === line.product_id) || {};
-        const imgSrc = p.image_url || DEFAULT_IMG;
+        const imgSrc = p.photo_url || p.image_url || DEFAULT_IMG;
+        const grpInfo = p.group_alias ? `<span style="color: var(--accent); font-size: 0.72rem; font-weight: 700; margin-right: 4px;">[${p.group_alias}]</span>` : '';
         return `
           <div class="cart-item-card">
             <img src="${imgSrc}" class="cart-item-img" onerror="this.src='${DEFAULT_IMG}'">
             <div class="cart-item-info">
               <div class="cart-item-name">${line.name}</div>
-              <div class="cart-item-price">₹${line.unit_rate.toFixed(2)} (${line.unit_type}) × ${line.quantity} = ₹${line.line_total.toFixed(2)}</div>
+              <div class="cart-item-price">${grpInfo}₹${line.unit_rate.toFixed(2)} (${line.unit_type}) × ${line.quantity} = ₹${line.line_total.toFixed(2)}</div>
             </div>
             <div class="cart-item-controls">
               <div class="stepper">

@@ -197,20 +197,33 @@ def delete_customer(request, customer_id: int):
     return {"status": "success", "message": f"Customer '{customer.name}' soft deleted."}
 
 @api.get("/cart/init")
-def cart_init(request, customer_id: int):
+def cart_init(request, customer_id: Optional[int] = None):
     """Returns initial Mini App state for a customer including categories, images, and pricing tiers."""
-    customer = get_object_or_404(Customer, id=customer_id)
-    products = Product.objects.filter(is_active=True)
+    customer = None
+    if customer_id:
+        customer = Customer.objects.filter(id=customer_id, soft_deleted=False).first()
+    if not customer:
+        customer = Customer.objects.filter(soft_deleted=False).first()
+    if not customer:
+        customer = get_object_or_404(Customer, id=customer_id or 1)
+    products = Product.objects.filter(is_active=True, soft_deleted=0)
     
     categories = sorted(list(set(products.values_list("category", flat=True).distinct())))
+    groups = sorted([g for g in set(products.values_list("group_alias", flat=True).distinct()) if g])
+    category_aliases = sorted([c for c in set(products.values_list("category_alias", flat=True).distinct()) if c])
     
     catalog = [
         {
             "id": p.id,
             "sku": p.sku,
             "name": p.name,
-            "category": p.category,
-            "image_url": p.image_url or "",
+            "group_alias": p.group_alias or "",
+            "category_alias": p.category_alias or "",
+            "category": p.group_alias or p.category or "General",
+            "opening_qty": float(p.opening_qty),
+            "closing_qty": float(p.closing_qty),
+            "image_url": p.photo_url or p.image_url or "",
+            "photo_url": p.photo_url or p.image_url or "",
             "base_price": float(p.base_price),
             "loose_price": float(p.loose_price or p.base_price),
             "full_carton_price": float(p.full_carton_price),
@@ -222,7 +235,7 @@ def cart_init(request, customer_id: int):
         for p in products
     ]
 
-    usual_items = catalog[:4] if catalog else []
+    usual_items = catalog[:6] if catalog else []
     loc_str = f"{customer.city}, {customer.state_code}" if customer.city else f"State {customer.state_code}"
 
     transports = [
@@ -256,6 +269,8 @@ def cart_init(request, customer_id: int):
         },
         "transports": transports,
         "categories": categories,
+        "groups": groups,
+        "category_aliases": category_aliases,
         "usual_items": usual_items,
         "catalog": catalog
     }
@@ -493,7 +508,10 @@ def get_order_detail(request, order_id: int):
             "product_id": item.product.id,
             "product_name": item.product.name,
             "sku": item.product.sku,
-            "image_url": item.product.image_url or "",
+            "group_alias": item.product.group_alias or "",
+            "category_alias": item.product.category_alias or "",
+            "image_url": item.product.photo_url or item.product.image_url or "",
+            "photo_url": item.product.photo_url or item.product.image_url or "",
             "unit_type": item.unit_type,
             "quantity": item.quantity,
             "unit_price": float(item.unit_price),

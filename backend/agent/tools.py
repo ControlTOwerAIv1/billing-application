@@ -2,8 +2,10 @@ import os
 import sys
 import json
 import uuid
+import re
 from decimal import Decimal
 from pathlib import Path
+from django.db import models
 
 from langchain_core.tools import tool
 
@@ -319,8 +321,12 @@ def tool_soft_delete_customer(customer_identifier: str = "", customer_id: int = 
 def tool_create_product(
     sku: str,
     name: str,
-    category: str,
-    image_url: str,
+    category: str = "",
+    group_alias: str = "",
+    category_alias: str = "",
+    image_url: str = "",
+    opening_qty: float = 0.0,
+    closing_qty: float = 0.0,
     base_price: float = 0.0,
     loose_price: float = 0.0,
     full_carton_price: float = 0.0,
@@ -331,14 +337,11 @@ def tool_create_product(
 ) -> dict:
     """
     Creates or updates a product in the catalog.
-    Requires SKU, Name, Category, Photo/Image URL, Unit Pricing, Full Carton Pricing, and Carton Quantity.
+    Supports Product Name, Group Alias, Category Alias, Opening/Closing quantities, Photo URL, and Pricing.
     """
     missing = []
-    if not sku: missing.append("sku (Unique SKU code)")
     if not name: missing.append("name (Product Name)")
-    if not category: missing.append("category")
     if not image_url: missing.append("image_url (Product Photo link or URL)")
-    if base_price <= 0 and loose_price <= 0: missing.append("base_price or loose_price (Unit price > 0)")
     if full_carton_price <= 0: missing.append("full_carton_price (Full carton box price > 0)")
     if full_carton_quantity <= 0: missing.append("full_carton_quantity (Units per carton >= 1)")
 
@@ -349,39 +352,54 @@ def tool_create_product(
             "missing_fields": missing
         }
 
-    p_base = Decimal(str(base_price or loose_price))
-    p_loose = Decimal(str(loose_price or base_price))
-    p_carton = Decimal(str(full_carton_price))
-    p_half = Decimal(str(half_carton_price or (p_carton / Decimal("2.0"))))
+    grp = group_alias or category or "General"
+    cat = category_alias or grp
+
+    if not sku:
+        sku = re.sub(r'[^A-Za-z0-9]+', '-', name).strip('-').upper()[:30]
+
+    p_base = Decimal(str(base_price or loose_price or 0.0))
+    p_loose = Decimal(str(loose_price or base_price or 0.0))
+    p_carton = Decimal(str(full_carton_price or 0.0))
+    p_half = Decimal(str(half_carton_price or (p_carton / Decimal("2.0") if p_carton > 0 else 0.0)))
 
     product, created = Product.objects.get_or_create(
-        sku=sku,
+        name=name,
         defaults={
-            "name": name,
-            "category": category,
+            "sku": sku,
+            "group_alias": grp,
+            "category_alias": cat,
+            "category": grp,
             "image_url": image_url,
+            "opening_qty": Decimal(str(opening_qty or 0.0)),
+            "closing_qty": Decimal(str(closing_qty or 0.0)),
             "base_price": p_base,
             "loose_price": p_loose,
             "full_carton_price": p_carton,
             "half_carton_price": p_half,
-            "full_carton_quantity": full_carton_quantity,
-            "gst_rate": Decimal(str(gst_rate)),
+            "full_carton_quantity": full_carton_quantity or 1,
+            "gst_rate": Decimal(str(gst_rate or 18.0)),
             "hsn_code": hsn_code,
-            "is_active": True
+            "is_active": True,
+            "soft_deleted": 0
         }
     )
     if not created:
-        product.name = name
-        product.category = category
-        product.image_url = image_url
-        product.base_price = p_base
-        product.loose_price = p_loose
-        product.full_carton_price = p_carton
-        product.half_carton_price = p_half
-        product.full_carton_quantity = full_carton_quantity
-        product.gst_rate = Decimal(str(gst_rate))
-        product.hsn_code = hsn_code
+        product.sku = sku
+        product.group_alias = grp
+        product.category_alias = cat
+        product.category = grp
+        if image_url: product.image_url = image_url
+        if opening_qty: product.opening_qty = Decimal(str(opening_qty))
+        if closing_qty: product.closing_qty = Decimal(str(closing_qty))
+        if base_price or loose_price:
+            product.base_price = p_base
+            product.loose_price = p_loose
+        if full_carton_price:
+            product.full_carton_price = p_carton
+            product.half_carton_price = p_half
         product.is_active = True
+        product.soft_deleted = 0
         product.save()
 
     return {
@@ -391,8 +409,11 @@ def tool_create_product(
             "id": product.id,
             "sku": product.sku,
             "name": product.name,
-            "category": product.category,
-            "image_url": product.image_url,
+            "group_alias": product.group_alias,
+            "category_alias": product.category_alias,
+            "opening_qty": float(product.opening_qty),
+            "closing_qty": float(product.closing_qty),
+            "image_url": product.photo_url or product.image_url,
             "loose_price": float(product.loose_price),
             "full_carton_price": float(product.full_carton_price),
             "full_carton_quantity": product.full_carton_quantity,
@@ -400,21 +421,33 @@ def tool_create_product(
         }
     }
 
-def tool_search_products(query: str = "", category: str = "") -> dict:
-    """Searches active products by SKU, name, or category."""
-    qs = Product.objects.filter(is_active=True)
+def tool_search_products(query: str = "", category: str = "", group: str = "") -> dict:
+    """Searches active products by SKU, name, Group Alias, or Category Alias."""
+    qs = Product.objects.filter(is_active=True, soft_deleted=0)
     if query:
-        qs = qs.filter(sku__icontains=query) | qs.filter(name__icontains=query) | qs.filter(category__icontains=query)
+        qs = qs.filter(
+            models.Q(sku__icontains=query) |
+            models.Q(name__icontains=query) |
+            models.Q(group_alias__icontains=query) |
+            models.Q(category_alias__icontains=query) |
+            models.Q(category__icontains=query)
+        )
+    if group:
+        qs = qs.filter(group_alias__iexact=group)
     if category:
-        qs = qs.filter(category__iexact=category)
+        qs = qs.filter(models.Q(category_alias__iexact=category) | models.Q(category__iexact=category))
 
     products = [
         {
             "id": p.id,
             "sku": p.sku,
             "name": p.name,
-            "category": p.category,
-            "image_url": p.image_url or "",
+            "group_alias": p.group_alias,
+            "category_alias": p.category_alias,
+            "opening_qty": float(p.opening_qty),
+            "closing_qty": float(p.closing_qty),
+            "stock_status": f"{float(p.closing_qty):,.0f} in stock" if p.closing_qty > 0 else "Out of stock",
+            "image_url": p.photo_url or p.image_url or "",
             "base_price": float(p.base_price),
             "loose_price": float(p.loose_price),
             "full_carton_price": float(p.full_carton_price),
@@ -422,7 +455,7 @@ def tool_search_products(query: str = "", category: str = "") -> dict:
             "full_carton_quantity": p.full_carton_quantity,
             "gst_rate": float(p.gst_rate)
         }
-        for p in qs[:30]
+        for p in qs[:35]
     ]
     return {"status": "success", "count": len(products), "products": products}
 
@@ -907,23 +940,27 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "create_product",
-            "description": "Add or update a product in the catalog. All fields including photo/image_url, category, prices, and carton quantity are required.",
+            "description": "Add or update a product in the catalog with name, group alias, category alias, photo, stock, and pricing.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "sku": {"type": "string", "description": "Unique SKU code e.g. STAT-A4-500"},
-                    "name": {"type": "string", "description": "Product Name"},
-                    "category": {"type": "string", "description": "Category name e.g. Stationery, Plastics, Packaging"},
+                    "sku": {"type": "string", "description": "Unique SKU code (optional, auto-generated if omitted)"},
+                    "name": {"type": "string", "description": "Product Name (e.g. 002 AIKA COL SCISSOR)"},
+                    "group_alias": {"type": "string", "description": "Group Alias e.g. CUTLERY, SOLAR COMB, HARDWARE, POWDER PUF"},
+                    "category_alias": {"type": "string", "description": "Category Alias e.g. SCI, 7\" COMBS, NAILCUTTER"},
+                    "category": {"type": "string", "description": "Category name"},
                     "image_url": {"type": "string", "description": "Photo / Image URL of the product"},
+                    "opening_qty": {"type": "number", "description": "Opening quantity from ledger"},
+                    "closing_qty": {"type": "number", "description": "Closing quantity / Available stock"},
                     "base_price": {"type": "number", "description": "Base/loose piece price in INR"},
                     "loose_price": {"type": "number", "description": "Loose item price in INR"},
                     "full_carton_price": {"type": "number", "description": "Full carton box price in INR"},
                     "half_carton_price": {"type": "number", "description": "Half carton price in INR"},
-                    "full_carton_quantity": {"type": "integer", "description": "Units per carton box e.g. 50"},
+                    "full_carton_quantity": {"type": "integer", "description": "Units per carton box e.g. 24"},
                     "gst_rate": {"type": "number", "description": "GST percentage e.g. 18.0"},
                     "hsn_code": {"type": "string", "description": "HSN code e.g. 3926"}
                 },
-                "required": ["sku", "name", "category", "image_url", "full_carton_price", "full_carton_quantity"]
+                "required": ["name"]
             }
         }
     },
@@ -931,12 +968,13 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "search_products",
-            "description": "Search products in catalog by SKU, name, or category.",
+            "description": "Search products in catalog by SKU, name, Group Alias, or Category Alias.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "query": {"type": "string", "description": "Search query for SKU, name, or category"},
-                    "category": {"type": "string", "description": "Filter by category"}
+                    "query": {"type": "string", "description": "Search query for SKU, name, group alias, or category alias"},
+                    "group": {"type": "string", "description": "Filter by Group Alias (e.g. CUTLERY, SOLAR COMB)"},
+                    "category": {"type": "string", "description": "Filter by Category Alias (e.g. SCI, NAILCUTTER)"}
                 }
             }
         }

@@ -75,10 +75,15 @@ class Customer(SoftDeleteModel):
 
 class Product(SoftDeleteModel):
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="products", null=True, blank=True)
-    sku = models.CharField(max_length=50, db_index=True)
-    name = models.CharField(max_length=200)
-    category = models.CharField(max_length=100, default="General")
+    sku = models.CharField(max_length=100, db_index=True)
+    name = models.CharField(max_length=250)
+    group_alias = models.CharField(max_length=150, blank=True, default="", db_index=True, help_text="Group Alias e.g. CUTLERY, SOLAR COMB")
+    category_alias = models.CharField(max_length=150, blank=True, default="", db_index=True, help_text="Category Alias e.g. SCI, NAILCUTTER")
+    category = models.CharField(max_length=150, default="General")
+    photo = models.ImageField(upload_to="products/", blank=True, null=True, help_text="Uploaded product photo")
     image_url = models.CharField(max_length=1000, blank=True, null=True, default="")
+    opening_qty = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal("0.000"), help_text="Opening Quantity")
+    closing_qty = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal("0.000"), help_text="Closing Quantity / Current Stock")
     base_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     
     # Multi-tier Pricing
@@ -93,6 +98,15 @@ class Product(SoftDeleteModel):
     hsn_code = models.CharField(max_length=10, default="3926")
     gst_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("18.00"))
     is_active = models.BooleanField(default=True)
+
+    @property
+    def photo_url(self) -> str:
+        if self.photo:
+            try:
+                return self.photo.url
+            except Exception:
+                pass
+        return self.image_url or ""
 
     def get_price(self, tier: str = "loose") -> Decimal:
         tier_lower = tier.lower()

@@ -8,6 +8,9 @@ from backend.agent.tools import (
 
 class EnhancedFeaturesTests(TestCase):
     def setUp(self):
+        # Clean up any existing customers with this test name for clean test state
+        from django.db.models import Q
+        Customer.all_objects.filter(Q(name__icontains="Raj Wholesalers") | Q(business_name__icontains="Raj Wholesalers")).delete()
         # Create two customers with the exact same name in different cities
         self.cust_kolkata = Customer.objects.create(
             name="Raj Wholesalers",
@@ -61,18 +64,18 @@ class EnhancedFeaturesTests(TestCase):
     def test_customer_search_filters_and_locations(self):
         """Test customer search filters by city, state, and balance status."""
         # Filter by City
-        res_kol = tool_search_customers(city="Kolkata")
+        res_kol = tool_search_customers(query="Raj Wholesalers", city="Kolkata")
         self.assertEqual(res_kol["count"], 1)
         self.assertEqual(res_kol["customers"][0]["city"], "Kolkata")
         self.assertIn("Kolkata", res_kol["customers"][0]["location"])
 
         # Filter by State
-        res_rj = tool_search_customers(state_code="08")
+        res_rj = tool_search_customers(query="Raj Wholesalers", state_code="08")
         self.assertEqual(res_rj["count"], 1)
         self.assertEqual(res_rj["customers"][0]["city"], "Jaipur")
 
         # Filter by Outstanding Balance
-        res_bal = tool_search_customers(has_balance_due=True)
+        res_bal = tool_search_customers(query="Raj Wholesalers", has_balance_due=True)
         self.assertEqual(res_bal["count"], 1)
         self.assertEqual(res_bal["customers"][0]["id"], self.cust_jaipur.id)
 

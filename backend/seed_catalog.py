@@ -143,16 +143,9 @@ SAMPLE_CUSTOMERS = [
 ]
 
 def seed():
-    print("[*] Seeding Products with Multi-tier Pricing & Photos...")
-    for item in SAMPLE_SKUS:
-        p, created = Product.objects.get_or_create(sku=item["sku"], defaults=item)
-        if not created:
-            for k, v in item.items():
-                setattr(p, k, v)
-            p.save()
-            print(f"[UPDATED] SKU: {p.sku} - {p.name}")
-        else:
-            print(f"[CREATED] SKU: {p.sku} - {p.name}")
+    print("[*] Seeding Products from PDF Ledger Report...")
+    from backend.seed_pdf_products import seed as seed_pdf
+    seed_pdf()
 
     print("\n[*] Seeding Customers with Locations (for disambiguation testing)...")
     for cust_data in SAMPLE_CUSTOMERS:
