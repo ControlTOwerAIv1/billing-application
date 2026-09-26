@@ -524,50 +524,55 @@
     }
     .btn-checkout:active { transform: scale(0.98); }
 
-    /* Slide-Over Drawer / Modals */
+    /* Centered Modal / Cart & Checkout Dialog */
     .drawer-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(9, 13, 22, 0.8);
-      backdrop-filter: blur(12px);
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(14px);
       display: none;
-      justify-content: flex-end;
+      justify-content: center;
+      align-items: center;
       z-index: 2000;
+      padding: 20px;
     }
     .drawer-overlay.active { display: flex; }
 
     .drawer-panel {
       width: 100%;
-      max-width: 480px;
-      height: 100%;
-      background: var(--bg-secondary);
-      border-left: 1px solid var(--card-border);
+      max-width: 680px;
+      max-height: 90vh;
+      background: #0b1120;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-lg);
       display: flex;
       flex-direction: column;
-      animation: slideInRight 0.3s ease-out;
-    }
-    @keyframes slideInRight {
-      from { transform: translateX(100%); }
-      to { transform: translateX(0); }
+      box-shadow: 0 25px 70px -10px rgba(0, 0, 0, 0.85);
+      animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
     }
 
     .drawer-header {
-      padding: 18px 20px;
+      padding: 18px 22px;
       border-bottom: 1px solid var(--card-border);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: var(--bg-secondary);
+      border-top-left-radius: var(--radius-lg);
+      border-top-right-radius: var(--radius-lg);
     }
     .drawer-title { font-size: 1.15rem; font-weight: 800; color: var(--text-main); }
-    .drawer-close { background: none; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; }
+    .drawer-close { background: none; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; transition: color 0.15s; }
+    .drawer-close:hover { color: #fff; }
 
     .drawer-body {
-      padding: 16px 20px;
+      padding: 20px 22px;
       flex: 1;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
     }
 
     /* Cart Line Item Card */
@@ -752,9 +757,11 @@
     }
 
     .drawer-footer {
-      padding: 16px 20px;
+      padding: 16px 22px;
       border-top: 1px solid var(--card-border);
-      background: var(--bg-primary);
+      background: var(--bg-secondary);
+      border-bottom-left-radius: var(--radius-lg);
+      border-bottom-right-radius: var(--radius-lg);
     }
     .btn-block-action {
       width: 100%;
@@ -1234,9 +1241,9 @@
     </button>
   </div>
 
-  <!-- Slide-Over Cart Drawer -->
-  <div class="drawer-overlay" id="cart-drawer">
-    <div class="drawer-panel">
+  <!-- Centered Cart & Checkout Modal -->
+  <div class="drawer-overlay" id="cart-drawer" onclick="onCartOverlayClick(event)">
+    <div class="drawer-panel" onclick="event.stopPropagation()">
       <div class="drawer-header">
         <div class="drawer-title">🛒 Cart & Checkout</div>
         <button class="drawer-close" onclick="closeCartDrawer()">✕</button>
@@ -1377,9 +1384,9 @@
     </div>
   </div>
 
-  <!-- Slide-Over Orders History & Edit Drawer -->
-  <div class="drawer-overlay" id="orders-drawer">
-    <div class="drawer-panel">
+  <!-- Centered Orders History & Edit Modal -->
+  <div class="drawer-overlay" id="orders-drawer" onclick="onOrdersOverlayClick(event)">
+    <div class="drawer-panel" onclick="event.stopPropagation()">
       <div class="drawer-header">
         <div class="drawer-title">📋 Order History & Edits</div>
         <button class="drawer-close" onclick="closeOrdersDrawer()">✕</button>
@@ -1494,7 +1501,9 @@
           <div class="product-modal-subtitle">
             <span id="pm-sku">SKU</span> • 
             <span id="pm-group" class="badge-tag">Group</span> • 
-            <span id="pm-stock" class="badge-tag">In Stock</span>
+            <span id="pm-stock" class="badge-tag">In Stock</span> • 
+            <span id="pm-active-price" class="badge-tag" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-weight: 700;">Rate</span>
+            <span id="pm-price-tag" class="badge-tag" style="display: none;"></span>
           </div>
         </div>
         <button class="drawer-close" onclick="closeProductModal()">✕</button>
@@ -1768,8 +1777,25 @@
       const stockQty = p.closing_qty || 0;
       document.getElementById('pm-stock').innerText = stockQty > 0 ? `📦 ${stockQty.toLocaleString()} in stock` : '0 in stock';
 
-      document.getElementById('pm-price-loose').innerText = `₹${p.loose_price.toFixed(2)}`;
-      document.getElementById('pm-price-carton').innerText = `₹${p.full_carton_price.toFixed(2)} (${p.full_carton_quantity}x)`;
+      const isComb = p.group_alias === 'SOLAR COMB' || p.full_carton_quantity === 12;
+      const isUnlistedPrice = (p.loose_price === 1.00 && p.full_carton_price === 1.00);
+      const priceTag = document.getElementById('pm-price-tag');
+      if (priceTag) {
+        if (isUnlistedPrice) {
+          priceTag.style.display = 'inline-block';
+          priceTag.style.background = 'rgba(239, 68, 68, 0.18)';
+          priceTag.style.color = '#f87171';
+          priceTag.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+          priceTag.innerText = '⚠️ Rate ₹1 (Price not in PDF)';
+        } else {
+          priceTag.style.display = 'none';
+        }
+      }
+
+      const looseBtn = document.getElementById('pm-tier-loose');
+      const cartonBtn = document.getElementById('pm-tier-carton');
+      if (looseBtn) looseBtn.innerHTML = `${isComb ? 'Loose (Dozen)' : 'Loose'} (<span id="pm-price-loose">₹${p.loose_price.toFixed(2)}</span>)`;
+      if (cartonBtn) cartonBtn.innerHTML = `${isComb ? 'Carton (1 Gross / 12 Dzn)' : 'Carton'} (<span id="pm-price-carton">₹${p.full_carton_price.toFixed(2)}</span>)`;
       updateProductModalTierButtons();
 
       const imgSrc = p.photo_url || p.image_url || DEFAULT_IMG;
@@ -1800,6 +1826,12 @@
 
       const orderedColors = Object.keys(modalQuantities).filter(c => modalQuantities[c] > 0);
       activePreviewColor = preselectColor || (orderedColors.length > 0 ? orderedColors[0] : colorList[0]);
+
+      // If product has 0 quantity in cart currently, default the selected color variant to quantity 1
+      const currentTotalQty = Object.values(modalQuantities).reduce((a, b) => a + b, 0);
+      if (currentTotalQty === 0 && activePreviewColor) {
+        modalQuantities[activePreviewColor] = 1;
+      }
 
       renderModalColorsList(colorList, p);
       selectModalColor(activePreviewColor);
@@ -1978,16 +2010,33 @@
       const activeColorsCount = Object.values(modalQuantities).filter(q => q > 0).length;
       const unitPrice = modalSelectedTier === 'carton' ? p.full_carton_price : p.loose_price;
       const totalPrice = totalQty * unitPrice;
+      const isComb = p.group_alias === 'SOLAR COMB' || p.full_carton_quantity === 12;
+      const unitName = isComb ? (modalSelectedTier === 'carton' ? 'Carton (Gross)' : 'Dozen') : (modalSelectedTier === 'carton' ? 'Carton' : 'pc');
+      const unitTypeLabel = modalSelectedTier === 'carton' ? 'carton(s)' : (isComb ? 'dozen(s)' : 'pc(s)');
 
-      document.getElementById('pm-selection-count').innerText = `${totalQty} pcs selected (${activeColorsCount} colors)`;
-      document.getElementById('pm-footer-qty').innerText = `${totalQty} pcs total (${modalSelectedTier})`;
-      document.getElementById('pm-footer-price').innerText = `₹${totalPrice.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      // Update rate badge in modal header
+      const activePriceBadge = document.getElementById('pm-active-price');
+      if (activePriceBadge) {
+        activePriceBadge.innerText = `₹${unitPrice.toFixed(2)} / ${unitName}`;
+      }
 
+      const countEl = document.getElementById('pm-selection-count');
+      const footerQtyEl = document.getElementById('pm-footer-qty');
+      const footerPriceEl = document.getElementById('pm-footer-price');
       const btnSubmit = document.getElementById('pm-btn-submit');
+
+      const existingCartQty = getTotalProductQty(p.id);
+
       if (totalQty > 0) {
-        btnSubmit.innerText = `🛒 Update Cart (${totalQty} pcs)`;
+        if (countEl) countEl.innerText = `${totalQty} ${unitTypeLabel} selected (${activeColorsCount} color${activeColorsCount > 1 ? 's' : ''})`;
+        if (footerQtyEl) footerQtyEl.innerText = `${totalQty} ${unitTypeLabel} total (${modalSelectedTier})`;
+        if (footerPriceEl) footerPriceEl.innerText = `₹${totalPrice.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        if (btnSubmit) btnSubmit.innerText = existingCartQty > 0 ? `🛒 Update Cart (${totalQty} ${unitTypeLabel})` : `🛒 Add to Cart (${totalQty} ${unitTypeLabel})`;
       } else {
-        btnSubmit.innerText = `Done / Close`;
+        if (countEl) countEl.innerText = `0 ${unitTypeLabel} selected`;
+        if (footerQtyEl) footerQtyEl.innerText = `Unit Rate: ₹${unitPrice.toFixed(2)} / ${unitName}`;
+        if (footerPriceEl) footerPriceEl.innerHTML = `₹0.00 <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: normal; margin-left: 4px;">(0 in cart)</span>`;
+        if (btnSubmit) btnSubmit.innerText = `Done / Close`;
       }
     }
 
@@ -2050,8 +2099,11 @@
         const colorQtys = getProductColorQuantities(p.id);
         const orderedColorsCount = Object.keys(colorQtys).filter(c => colorQtys[c] > 0).length;
 
+        const isComb = p.group_alias === 'SOLAR COMB' || p.full_carton_quantity === 12;
         const currentPrice = tier === 'carton' ? p.full_carton_price : p.loose_price;
-        const unitLabel = tier === 'carton' ? `1 Carton (${p.full_carton_quantity} pcs)` : 'per loose pc';
+        const unitLabel = tier === 'carton' 
+          ? (isComb ? `1 Carton (1 Gross / ${p.full_carton_quantity} dzn)` : `1 Carton (${p.full_carton_quantity} pcs)`) 
+          : (isComb ? 'per Dozen (12 pcs)' : 'per loose pc');
         const imgSrc = p.photo_url || p.image_url || DEFAULT_IMG;
         const groupLabel = p.group_alias || p.category || 'Product';
         const subcatLabel = p.category_alias;
@@ -2098,17 +2150,20 @@
               <!-- Multi-tier Selector -->
               <div class="tier-toggle" onclick="event.stopPropagation()">
                 <button class="tier-btn ${tier === 'loose' ? 'active' : ''}" onclick="setProductTier(${p.id}, 'loose')">
-                  Loose
+                  ${isComb ? 'Loose (Dzn)' : 'Loose'}
                 </button>
                 <button class="tier-btn ${tier === 'carton' ? 'active' : ''}" onclick="setProductTier(${p.id}, 'carton')">
-                  Carton (${p.full_carton_quantity}x)
+                  ${isComb ? 'Carton (Gross)' : `Carton (${p.full_carton_quantity}x)`}
                 </button>
               </div>
 
               <div class="product-pricing">
                 <div>
-                  <div class="price-main">₹${currentPrice.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
-                  <div class="price-unit-desc">${unitLabel}</div>
+                  <div class="price-main">
+                    ₹${currentPrice.toLocaleString('en-IN', {minimumFractionDigits: 2})}
+                    ${(p.loose_price === 1.00 && p.full_carton_price === 1.00) ? '<span style="font-size: 0.65rem; color: #f87171; background: rgba(239,68,68,0.18); border: 1px solid rgba(239,68,68,0.4); padding: 1px 6px; border-radius: 4px; margin-left: 5px; font-weight: 700; vertical-align: middle;">Not in PDF</span>' : ''}
+                  </div>
+                  <div class="price-unit-desc">${(p.loose_price === 1.00 && p.full_carton_price === 1.00) ? 'Default rate (not in PDF)' : unitLabel}</div>
                 </div>
               </div>
 
@@ -2348,6 +2403,11 @@
     function closeCartDrawer() {
       document.getElementById('cart-drawer').classList.remove('active');
     }
+    function onCartOverlayClick(e) {
+      if (e.target.id === 'cart-drawer') {
+        closeCartDrawer();
+      }
+    }
 
     async function submitOrder() {
       const items = Object.entries(cartState).map(([k, q]) => {
@@ -2483,6 +2543,11 @@
 
     function closeOrdersDrawer() {
       document.getElementById('orders-drawer').classList.remove('active');
+    }
+    function onOrdersOverlayClick(e) {
+      if (e.target.id === 'orders-drawer') {
+        closeOrdersDrawer();
+      }
     }
 
     async function openEditOrderModal(orderId) {
