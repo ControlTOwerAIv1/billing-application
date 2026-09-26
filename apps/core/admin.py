@@ -1,5 +1,5 @@
 from django.contrib import admin
-from apps.core.models import Tenant, Customer, Product, Order, Transport
+from apps.core.models import Tenant, Customer, Product, Order, OrderItem, Transport
 
 @admin.register(Tenant)
 class TenantAdmin(admin.ModelAdmin):
@@ -27,6 +27,7 @@ class ProductAdmin(admin.ModelAdmin):
         "id",
         "photo_thumbnail",
         "name",
+        "colors",
         "group_alias",
         "category_alias",
         "opening_qty",
@@ -37,11 +38,11 @@ class ProductAdmin(admin.ModelAdmin):
         "soft_deleted"
     )
     list_filter = ("group_alias", "category_alias", "is_active", "soft_deleted")
-    search_fields = ("name", "sku", "group_alias", "category_alias")
+    search_fields = ("name", "sku", "colors", "group_alias", "category_alias")
     readonly_fields = ("photo_preview",)
     fieldsets = (
         ("Product Identity & Aliases", {
-            "fields": ("name", "sku", "group_alias", "category_alias", "category", "is_active")
+            "fields": ("name", "sku", "group_alias", "category_alias", "category", "colors", "is_active")
         }),
         ("Product Media / Photo", {
             "fields": ("photo", "photo_preview", "image_url")
@@ -71,8 +72,19 @@ class ProductAdmin(admin.ModelAdmin):
         return "Upload a photo or provide an Image URL to preview."
     photo_preview.short_description = "Photo Preview"
 
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+    fields = ("product", "quantity", "unit_price", "pricing_tier", "color", "item_total")
+    readonly_fields = ("item_total",)
+
+    def item_total(self, obj):
+        return obj.total_price
+    item_total.short_description = "Total"
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ("id", "voucher_no", "customer", "transport", "gst_enabled", "custom_gst_rate", "subtotal", "packing_charge", "discount_amount", "total_amount", "status", "created_at", "soft_deleted")
     list_filter = ("status", "gst_enabled", "transport", "soft_deleted")
     search_fields = ("voucher_no", "customer__name")
+    inlines = [OrderItemInline]

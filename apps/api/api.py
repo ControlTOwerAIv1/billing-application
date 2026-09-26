@@ -52,6 +52,7 @@ class CartItemInput(Schema):
     product_id: int
     quantity: int
     unit_type: Optional[str] = "loose"
+    color: Optional[str] = ""
 
 class PriceCartInput(Schema):
     customer_id: int
@@ -222,8 +223,13 @@ def cart_init(request, customer_id: Optional[int] = None):
             "category": p.group_alias or p.category or "General",
             "opening_qty": float(p.opening_qty),
             "closing_qty": float(p.closing_qty),
+            "colors": p.colors or "",
+            "color_list": p.color_list,
             "image_url": p.photo_url or p.image_url or "",
             "photo_url": p.photo_url or p.image_url or "",
+            "gallery_images": p.gallery_images or [],
+            "color_images": p.color_images or {},
+            "all_images": p.all_images,
             "base_price": float(p.base_price),
             "loose_price": float(p.loose_price or p.base_price),
             "full_carton_price": float(p.full_carton_price),
@@ -333,6 +339,7 @@ def price_cart(request, payload: PriceCartInput):
             "name": product.name,
             "sku": product.sku,
             "unit_type": unit_type,
+            "color": item.color or "",
             "quantity": qty,
             "unit_rate": float(rate),
             "gst_rate": float(effective_gst_pct),
@@ -379,7 +386,13 @@ def submit_order(request, payload: SubmitOrderInput):
         gst_rate=float(custom_rate) if custom_rate is not None else None
     ))
     
-    voucher_no = f"ORD-2026-{random.randint(1000, 9999)}"
+    for _ in range(20):
+        candidate = f"ORD-2026-{random.randint(1000, 99999)}"
+        if not Order.objects.filter(voucher_no=candidate).exists():
+            voucher_no = candidate
+            break
+    else:
+        voucher_no = f"ORD-2026-{uuid.uuid4().hex[:6].upper()}"
 
     order_transport = None
     if payload.transport_id:
@@ -414,7 +427,8 @@ def submit_order(request, payload: SubmitOrderInput):
             quantity=item.quantity,
             unit_price=unit_price,
             taxable_amount=taxable_amt,
-            gst_rate=effective_rate
+            gst_rate=effective_rate,
+            color=item.color or ""
         )
 
     order.calculate_taxes_and_totals(tenant_state_code="08")
@@ -513,6 +527,7 @@ def get_order_detail(request, order_id: int):
             "image_url": item.product.photo_url or item.product.image_url or "",
             "photo_url": item.product.photo_url or item.product.image_url or "",
             "unit_type": item.unit_type,
+            "color": item.color or "",
             "quantity": item.quantity,
             "unit_price": float(item.unit_price),
             "taxable_amount": float(item.taxable_amount),
@@ -601,7 +616,8 @@ def edit_order_api(request, order_id: int, payload: EditOrderInput):
                 quantity=item.quantity,
                 unit_price=unit_price,
                 taxable_amount=taxable_amt,
-                gst_rate=effective_rate
+                gst_rate=effective_rate,
+                color=item.color or ""
             )
 
         order.calculate_taxes_and_totals(tenant_state_code="08")

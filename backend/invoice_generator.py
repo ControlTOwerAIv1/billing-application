@@ -277,7 +277,8 @@ def generate_order_pdf_bytes(order) -> bytes:
         for item in group_items:
             prod_name = item.product.name if item.product else "N/A"
             qty = item.quantity
-            prod_entries.append(f"{prod_name} (Qty: {qty})")
+            color_suffix = f" [{item.color}]" if getattr(item, 'color', None) else ""
+            prod_entries.append(f"{prod_name}{color_suffix} (Qty: {qty})")
             rates.append(f"{float(item.unit_price):,.2f}")
             group_total += Decimal(str(item.total_amount if item.total_amount is not None else item.taxable_amount or 0))
 

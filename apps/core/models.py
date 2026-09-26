@@ -82,8 +82,11 @@ class Product(SoftDeleteModel):
     category = models.CharField(max_length=150, default="General")
     photo = models.ImageField(upload_to="products/", blank=True, null=True, help_text="Uploaded product photo")
     image_url = models.CharField(max_length=1000, blank=True, null=True, default="")
+    gallery_images = models.JSONField(default=list, blank=True, help_text="Additional photo URLs or variant image paths")
+    color_images = models.JSONField(default=dict, blank=True, help_text="Mapping of color code to variant image URL")
     opening_qty = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal("0.000"), help_text="Opening Quantity")
     closing_qty = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal("0.000"), help_text="Closing Quantity / Current Stock")
+    colors = models.CharField(max_length=255, blank=True, default="", help_text="Available colors e.g. PL, GW, ALM, BKDC, TOM, ICE, SHELL, RG")
     base_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     
     # Multi-tier Pricing
@@ -100,6 +103,12 @@ class Product(SoftDeleteModel):
     is_active = models.BooleanField(default=True)
 
     @property
+    def color_list(self) -> list:
+        if not self.colors:
+            return []
+        return [c.strip() for c in self.colors.replace("/", ",").split(",") if c.strip()]
+
+    @property
     def photo_url(self) -> str:
         if self.photo:
             try:
@@ -107,6 +116,16 @@ class Product(SoftDeleteModel):
             except Exception:
                 pass
         return self.image_url or ""
+
+    @property
+    def all_images(self) -> list:
+        imgs = []
+        if self.photo_url:
+            imgs.append(self.photo_url)
+        for g in (self.gallery_images or []):
+            if g and g not in imgs:
+                imgs.append(g)
+        return imgs
 
     def get_price(self, tier: str = "loose") -> Decimal:
         tier_lower = tier.lower()
@@ -232,6 +251,7 @@ class OrderItem(SoftDeleteModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="order_items")
     unit_type = models.CharField(max_length=20, default="loose", help_text="loose, half_carton, full_carton, stuffed")
+    color = models.CharField(max_length=50, blank=True, default="", help_text="Selected product color variant")
     quantity = models.IntegerField(default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
     taxable_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
