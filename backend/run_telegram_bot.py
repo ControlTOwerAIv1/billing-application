@@ -16,7 +16,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "orderbot.settings")
 django.setup()
 
 from django.conf import settings
-from backend.config import TELEGRAM_BOT_TOKEN
+from backend.config import TELEGRAM_BOT_TOKEN, SERVER_BASE_URL
 from backend.agent.agent import OrderBotAgent
 from backend.formatter import markdown_to_telegram_html
 from apps.core.models import Customer, Order, Product, Transport
@@ -210,14 +210,16 @@ def dispatch_product_photos_if_any(chat_id: int, result_dict: dict, user_text: s
             caption = f"📸 <b>{prod.name}</b> (SKU: <code>{prod.sku}</code>)\n💰 ₹{float(prod.loose_price):.2f} / pc | Carton: ₹{float(prod.full_carton_price):.2f}"
 def send_customer_catalogue_link(chat_id: int, customer: Customer, first_name: str = ""):
     """Generates and dispatches the personalized Mini App catalogue link for the selected customer."""
-    mini_app_url = f"http://127.0.0.1:8000/miniapp/?customer_id={customer.id}&chat_id={chat_id}"
+    mini_app_url = f"{SERVER_BASE_URL}/miniapp/?customer_id={customer.id}&chat_id={chat_id}"
+    
+    # Telegram web_app requires HTTPS. If HTTPS is configured, open directly inside Telegram; else open in browser.
+    if mini_app_url.startswith("https://"):
+        btn = {"text": f"🛒 Open Catalogue ({customer.name})", "web_app": {"url": mini_app_url}}
+    else:
+        btn = {"text": f"🛒 Open Catalogue ({customer.name})", "url": mini_app_url}
+
     keyboard = {
-        "inline_keyboard": [[
-            {
-                "text": f"🛒 Open Catalogue for {customer.name} (Browser)",
-                "url": mini_app_url
-            }
-        ]]
+        "inline_keyboard": [[btn]]
     }
     loc_str = f"{customer.city}, State {customer.state_code}" if customer.city else f"State {customer.state_code}"
     bal_str = f"₹{float(customer.balance_amount):,.2f}"

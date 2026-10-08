@@ -37,12 +37,13 @@ def markdown_to_telegram_html(text: str) -> str:
     # Escape HTML special characters in the remaining text
     text = html.escape(text)
 
+    from backend.config import SERVER_BASE_URL
     # Convert Markdown Links: [label](url) -> <a href="url">label</a>
     def format_link(match):
         label = match.group(1)
         url = match.group(2).strip()
         if url.startswith("/"):
-            url = f"http://127.0.0.1:8000{url}"
+            url = f"{SERVER_BASE_URL}{url}"
         return f'<a href="{url}">{label}</a>'
 
     text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', format_link, text)

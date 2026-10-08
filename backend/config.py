@@ -21,6 +21,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 DB_PATH = os.getenv("DB_PATH", str(BASE_DIR / "orderbot.db"))
+SERVER_BASE_URL = os.getenv("SERVER_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 
 raw_model = os.getenv("LLM_MODEL", "gemini/gemini-3.5-flash-lite")
 if raw_model.startswith("gemini-") and not raw_model.startswith("gemini/"):

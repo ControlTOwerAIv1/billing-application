@@ -89,7 +89,7 @@ def get_langchain_model(model_name: str):
     elif "claude" in model_str.lower() or "anthropic" in model_str.lower():
         from langchain_anthropic import ChatAnthropic
         api_key = ANTHROPIC_API_KEY or os.getenv("ANTHROPIC_API_KEY")
-        return ChatAnthropic(model=raw_name, api_key=api_key, temperature=0.0)
+        return ChatAnthropic(model=raw_name, api_key=api_key)
 
     elif "gpt" in model_str.lower() or "openai" in model_str.lower():
         from langchain_openai import ChatOpenAI
@@ -173,7 +173,10 @@ class OrderBotAgent:
             else:
                 msg = f"⚠️ LangGraph Agent Error calling '{self.model_name}': {err_str}"
 
-            print(f"[LangGraph Error]: {msg}")
+            try:
+                print(f"[LangGraph Error]: {msg}")
+            except Exception:
+                print(f"[LangGraph Error]: {err_str}")
             return {"status": "error", "message": msg, "response": msg}
 
     def process_command(self, user_intent: str, module_name: str = "customers", provided_data: dict = None) -> dict:
