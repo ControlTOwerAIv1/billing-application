@@ -2863,14 +2863,18 @@
       recalculateCart();
     }
 
+    // Subpath prefix detection for reverse-proxy deployments (e.g. /hindustan-plast)
+    const APP_PREFIX = window.location.pathname.includes('/miniapp')
+      ? window.location.pathname.substring(0, window.location.pathname.indexOf('/miniapp'))
+      : (window.location.pathname.startsWith('/hindustan-plast') ? '/hindustan-plast' : '');
+
     // Default & Fallback Placeholder Images
-    const NO_IMAGE_AVAILABLE = apiUrl("/media/no_image_available.png");
+    const NO_IMAGE_AVAILABLE = "/media/no_image_available.png";
     const DEFAULT_IMG = NO_IMAGE_AVAILABLE;
 
     async function initApp() {
       try {
-        const initUrl = customerId ? apiUrl(`/api/cart/init?customer_id=${customerId}`) : apiUrl('/api/cart/init');
-        const resp = await fetch(initUrl);
+        const resp = await fetch(`/api/cart/init?customer_id=${customerId}`);
         const data = await resp.json();
         customerData = data.customer;
         if (customerData && customerData.id) {
@@ -3907,8 +3911,7 @@
       const { gstEnabled, gstRate } = getGstSettings();
 
       try {
-        const cid = (customerData && customerData.id) ? customerData.id : customerId;
-        const resp = await fetch(apiUrl('/api/cart/price'), {
+        const resp = await fetch('/api/cart/price', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -4219,8 +4222,7 @@
       const hideProductRate = document.getElementById('toggle-hide-rate-switch')?.checked || false;
 
       try {
-        const cid = (customerData && customerData.id) ? customerData.id : customerId;
-        const resp = await fetch(apiUrl('/api/cart/submit'), {
+        const resp = await fetch('/api/cart/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -4328,9 +4330,7 @@
       container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">Loading your orders...</div>`;
 
       try {
-        const cid = (customerData && customerData.id) ? customerData.id : customerId;
-        const ordersUrl = cid ? apiUrl(`/api/orders?customer_id=${cid}`) : apiUrl('/api/orders');
-        const resp = await fetch(ordersUrl);
+        const resp = await fetch(`/api/orders?customer_id=${customerId}`);
         const res = await resp.json();
         const orders = res.orders || [];
 
@@ -4459,7 +4459,7 @@
     async function openEditOrderModal(orderId) {
       currentEditingOrderId = orderId;
       try {
-        const resp = await fetch(apiUrl(`/api/orders/${orderId}`));
+        const resp = await fetch(`/api/orders/${orderId}`);
         const data = await resp.json();
 
         currentEditingOrderVoucher = data.voucher_no || `${orderId}`;
@@ -4881,7 +4881,7 @@
       const editGstEnabled = isToggleChecked && rawRate !== '' && editGstRate > 0;
 
       try {
-        const resp = await fetch(apiUrl(`/api/orders/${currentEditingOrderId}/edit`), {
+        const resp = await fetch(`/api/orders/${currentEditingOrderId}/edit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
