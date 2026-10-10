@@ -163,8 +163,8 @@ def generate_order_pdf_bytes(order) -> bytes:
     has_zero_rate = (custom_rate is not None and custom_rate <= Decimal("0.00"))
 
     gst_is_active = bool(getattr(order, 'gst_enabled', True)) and (tax_sum > Decimal("0.00")) and (not has_zero_rate)
-    inv_title_text = "TAX INVOICE" if gst_is_active else "INVOICE / BILL"
-    inv_sub_text = "ORIGINAL FOR RECIPIENT" if gst_is_active else "COMMERCIAL BILL OF SUPPLY"
+    inv_title_text = "ESTIMATE"
+    inv_sub_text = "COMMERCIAL ESTIMATE"
 
     if logo_file:
         logo_img = Image(logo_file, width=62, height=62)
@@ -223,20 +223,22 @@ def generate_order_pdf_bytes(order) -> bytes:
     if transport_obj and transport_obj.vehicle_number:
         transport_display += f" ({transport_obj.vehicle_number})"
 
+    details_header = "<b>Estimate Details:</b>"
+    doc_num_label = "<b>Estimate #:</b>"
+
     cust_info = [
-        [Paragraph("<b>Billed To:</b>", section_header), Paragraph("<b>Invoice Details:</b>", section_header)],
+        [Paragraph("<b>Billed To:</b>", section_header), Paragraph(details_header, section_header)],
         [
             Paragraph(f"<b>{customer.name}</b><br/>"
                       f"Business: {customer.business_name or 'N/A'}<br/>"
                       f"Phone: {customer.phone}<br/>"
                       f"State Code: {customer.state_code}<br/>"
                       f"GSTIN: {customer.gstin or 'N/A'}", normal_style),
-            Paragraph(f"<b>Invoice #:</b> {order.voucher_no}<br/>"
+            Paragraph(f"{doc_num_label} {order.voucher_no}<br/>"
                       f"<b>Date:</b> {created_date}<br/>"
                       f"<b>Transport:</b> {transport_display}<br/>"
                       f"<b>Order Type:</b> {order_type_display}<br/>"
-                      f"<b>Status:</b> {order.status.upper()}<br/>"
-                      f"<b>Payment:</b> {order.payment_status.upper()}", normal_style)
+                      f"<b>Status:</b> {order.status.upper()}", normal_style)
         ]
     ]
 
@@ -249,64 +251,113 @@ def generate_order_pdf_bytes(order) -> bytes:
     story.append(info_table)
     story.append(Spacer(1, 15))
 
-    # Line Items Table Header (Grouped by Category / Master SKU, SKU hidden)
+    # Line Items Table Header (Product Name, Qty, Rate, Amount)
     items_data = [
         [
             Paragraph("#", table_header_center_style),
-            Paragraph("Category & Products", table_header_style),
-            Paragraph("Rate (₹)", table_header_right_style),
-            Paragraph("Total Rate (₹)", table_header_right_style),
+            Paragraph("Product Name", table_header_style),
+            Paragraph("Qty", table_header_center_style),
+            Paragraph("Rate (Rs.)", table_header_right_style),
+            Paragraph("Amount (Rs.)", table_header_right_style),
         ]
     ]
 
-    # Group order items by product category (Master SKU)
+    # Group order items by product
     from collections import OrderedDict
-    category_groups = OrderedDict()
+    product_groups = OrderedDict()
     items = order.items.select_related('product').all()
     for item in items:
-        cat = item.product.category if (item.product and item.product.category) else "General"
-        if cat not in category_groups:
-            category_groups[cat] = []
-        category_groups[cat].append(item)
+        prod_key = item.product_id if (item.product and item.product_id) else f"item_{item.id}"
+        if prod_key not in product_groups:
+            product_groups[prod_key] = {
+                'product': item.product,
+                'items': []
+            }
+        product_groups[prod_key]['items'].append(item)
 
-    for idx, (cat_name, group_items) in enumerate(category_groups.items(), 1):
-        prod_entries = []
+    for idx, (prod_key, group_data) in enumerate(product_groups.items(), 1):
+        product = group_data['product']
+        group_items = group_data['items']
+
+        prod_name = product.name if product else "N/A"
+
+        color_counts = OrderedDict()
+        no_color_qty = 0
+        total_qty = 0
         rates = []
         group_total = Decimal("0.00")
 
         for item in group_items:
-            prod_name = item.product.name if item.product else "N/A"
             qty = item.quantity
-            color_suffix = f" [{item.color}]" if getattr(item, 'color', None) else ""
-            prod_entries.append(f"{prod_name}{color_suffix} (Qty: {qty})")
-            rates.append(f"{float(item.unit_price):,.2f}")
+            total_qty += qty
+            c = (item.color or "").strip()
+            if c:
+                color_counts[c] = color_counts.get(c, 0) + qty
+            else:
+                no_color_qty += qty
+
+            unit_suffix = ""
+            if item.unit_type and item.unit_type in ["full_carton", "carton", "stuffed_full_carton"]:
+                unit_suffix = " /ctn"
+            elif item.unit_type and item.unit_type in ["half_carton"]:
+                unit_suffix = " /half-ctn"
+
+            rate_str = f"{float(item.unit_price):,.2f}{unit_suffix}"
+            if rate_str not in rates:
+                rates.append(rate_str)
+
             group_total += Decimal(str(item.total_amount if item.total_amount is not None else item.taxable_amount or 0))
 
-        prods_text = ", ".join(prod_entries)
-        description_cell = Paragraph(
-            f"<b>{cat_name}</b><br/><font color='#475569'>{prods_text}</font>",
-            normal_style
-        )
+        color_parts = []
+        if color_counts:
+            for color_name, c_qty in color_counts.items():
+                color_parts.append(f"{color_name}-{c_qty}")
+            if no_color_qty > 0:
+                color_parts.append(f"Standard-{no_color_qty}")
+            color_text = f"Color: {', '.join(color_parts)}"
+        elif no_color_qty > 0:
+            color_text = f"Qty: {no_color_qty}"
+        else:
+            color_text = ""
+
+        if color_text:
+            description_html = f"<b>{prod_name}</b><br/><font color='#475569'>{color_text}</font>"
+        else:
+            description_html = f"<b>{prod_name}</b>"
+
+        description_cell = Paragraph(description_html, normal_style)
         rates_text = ", ".join(rates)
-        total_rate_text = f"{float(group_total):,.2f}"
+        amount_text = f"{float(group_total):,.2f}"
+
+        is_carton = any(item.unit_type in ["full_carton", "carton", "stuffed_full_carton"] for item in group_items)
+        is_half_carton = any(item.unit_type == "half_carton" for item in group_items)
+
+        if is_carton:
+            qty_display = f"{total_qty} ctn"
+        elif is_half_carton:
+            qty_display = f"{total_qty} half-ctn"
+        else:
+            qty_display = str(total_qty)
 
         items_data.append([
             Paragraph(str(idx), normal_center_style),
             description_cell,
+            Paragraph(qty_display, normal_center_style),
             Paragraph(rates_text, normal_right_style),
-            Paragraph(total_rate_text, normal_right_style),
+            Paragraph(amount_text, normal_right_style),
         ])
 
-    items_table = Table(items_data, colWidths=[30, 313, 90, 90])
+    items_table = Table(items_data, colWidths=[26, 267, 50, 90, 90])
     items_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E293B')),
         ('ALIGN', (0, 0), (0, -1), 'CENTER'),
         ('ALIGN', (1, 0), (1, -1), 'LEFT'),
-        ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
+        ('ALIGN', (2, 0), (2, -1), 'CENTER'),
+        ('ALIGN', (3, 0), (-1, -1), 'RIGHT'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8FAFC')])
     ]))
     story.append(items_table)
@@ -317,30 +368,30 @@ def generate_order_pdf_bytes(order) -> bytes:
     
     subtotal_label = "<b>Subtotal (Taxable Amount):</b>" if gst_is_active else "<b>Subtotal:</b>"
     totals_data = [
-        [Paragraph(subtotal_label, normal_style), Paragraph(f"₹{float(order.subtotal):,.2f}", normal_style)]
+        [Paragraph(subtotal_label, normal_style), Paragraph(f"Rs. {float(order.subtotal):,.2f}", normal_style)]
     ]
 
     if gst_is_active:
         if is_intra_state:
             cgst_label = f"<b>CGST ({float(order.custom_gst_rate)/2.0:g}%):</b>" if order.custom_gst_rate else "<b>CGST:</b>"
             sgst_label = f"<b>SGST ({float(order.custom_gst_rate)/2.0:g}%):</b>" if order.custom_gst_rate else "<b>SGST:</b>"
-            totals_data.append([Paragraph(cgst_label, normal_style), Paragraph(f"₹{float(order.cgst_amount):,.2f}", normal_style)])
-            totals_data.append([Paragraph(sgst_label, normal_style), Paragraph(f"₹{float(order.sgst_amount):,.2f}", normal_style)])
+            totals_data.append([Paragraph(cgst_label, normal_style), Paragraph(f"Rs. {float(order.cgst_amount):,.2f}", normal_style)])
+            totals_data.append([Paragraph(sgst_label, normal_style), Paragraph(f"Rs. {float(order.sgst_amount):,.2f}", normal_style)])
         else:
             igst_label = f"<b>IGST ({float(order.custom_gst_rate):g}%):</b>" if order.custom_gst_rate else "<b>IGST:</b>"
-            totals_data.append([Paragraph(igst_label, normal_style), Paragraph(f"₹{float(order.igst_amount):,.2f}", normal_style)])
+            totals_data.append([Paragraph(igst_label, normal_style), Paragraph(f"Rs. {float(order.igst_amount):,.2f}", normal_style)])
 
     packing = getattr(order, 'packing_charge', Decimal("0.00")) or Decimal("0.00")
     if packing > Decimal("0.00"):
-        totals_data.append([Paragraph("<b>Packing & Handling:</b>", normal_style), Paragraph(f"+ ₹{float(packing):,.2f}", normal_style)])
+        totals_data.append([Paragraph("<b>Packing & Handling:</b>", normal_style), Paragraph(f"+ Rs. {float(packing):,.2f}", normal_style)])
 
     discount = getattr(order, 'discount_amount', Decimal("0.00")) or Decimal("0.00")
     if discount > Decimal("0.00"):
         discount_style = ParagraphStyle('DiscountStyle', parent=normal_style, textColor=colors.HexColor('#16A34A'))
-        totals_data.append([Paragraph("<b>Discount:</b>", discount_style), Paragraph(f"- ₹{float(discount):,.2f}", discount_style)])
+        totals_data.append([Paragraph("<b>Discount:</b>", discount_style), Paragraph(f"- Rs. {float(discount):,.2f}", discount_style)])
 
     grand_total_style = ParagraphStyle('GrandTotal', parent=normal_style, fontSize=11, fontName='Helvetica-Bold', textColor=colors.HexColor('#1E293B'))
-    totals_data.append([Paragraph("<b>Grand Total:</b>", grand_total_style), Paragraph(f"<b>₹{float(order.total_amount):,.2f}</b>", grand_total_style)])
+    totals_data.append([Paragraph("<b>Grand Total:</b>", grand_total_style), Paragraph(f"<b>Rs. {float(order.total_amount):,.2f}</b>", grand_total_style)])
 
     totals_table = Table(totals_data, colWidths=[200, 100])
     totals_table.setStyle(TableStyle([
@@ -363,7 +414,7 @@ def generate_order_pdf_bytes(order) -> bytes:
     story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#CBD5E1'), spaceAfter=10))
     story.append(Paragraph("<b>Terms & Conditions:</b> Goods once sold will not be taken back or exchanged. Payment due as per credit terms.", sub_title_style))
     story.append(Spacer(1, 4))
-    doc_kind = "tax invoice" if gst_is_active else "bill of supply / invoice"
+    doc_kind = "estimate"
     story.append(Paragraph(f"<i>This is a computer-generated {doc_kind} issued by HINDUSTAN PLAST. No signature required. Thank you for your business!</i>", sub_title_style))
 
     doc.build(story)
