@@ -59,6 +59,8 @@ class PriceCartInput(Schema):
     items: List[CartItemInput]
     packing_charge: Optional[float] = 0.0
     discount_amount: Optional[float] = 0.0
+    discount_type: Optional[str] = "amount"
+    discount_percent: Optional[float] = None
     gst_enabled: Optional[bool] = True
     gst_rate: Optional[float] = None
 
@@ -69,6 +71,8 @@ class SubmitOrderInput(Schema):
     notes: Optional[str] = None
     packing_charge: Optional[float] = 0.0
     discount_amount: Optional[float] = 0.0
+    discount_type: Optional[str] = "amount"
+    discount_percent: Optional[float] = None
     transport_id: Optional[int] = None
     gst_enabled: Optional[bool] = True
     gst_rate: Optional[float] = None
@@ -79,6 +83,8 @@ class EditOrderInput(Schema):
     notes: Optional[str] = None
     packing_charge: Optional[float] = None
     discount_amount: Optional[float] = None
+    discount_type: Optional[str] = "amount"
+    discount_percent: Optional[float] = None
     transport_id: Optional[int] = None
     gst_enabled: Optional[bool] = None
     gst_rate: Optional[float] = None
@@ -290,7 +296,6 @@ def price_cart(request, payload: PriceCartInput):
     total_sgst = Decimal("0.00")
     total_igst = Decimal("0.00")
     packing_charge = Decimal(str(payload.packing_charge or 0.0)).quantize(Decimal("0.01"))
-    discount_amount = Decimal(str(payload.discount_amount or 0.0)).quantize(Decimal("0.01"))
 
     gst_enabled = True if payload.gst_enabled is None else bool(payload.gst_enabled)
     custom_rate = Decimal(str(payload.gst_rate)).quantize(Decimal("0.01")) if (payload.gst_rate is not None and str(payload.gst_rate).strip() != "") else None
@@ -348,7 +353,20 @@ def price_cart(request, payload: PriceCartInput):
             "line_total": float(line_total)
         })
 
-    calc_total = subtotal + total_cgst + total_sgst + total_igst + packing_charge - discount_amount
+    # Calculate discount based on discount_type (amount or percent)
+    gross_before_discount = subtotal + total_cgst + total_sgst + total_igst + packing_charge
+    discount_type = (payload.discount_type or "amount").lower().strip()
+
+    if discount_type == "percent" and payload.discount_percent is not None:
+        disc_pct = Decimal(str(payload.discount_percent)).quantize(Decimal("0.01"))
+        if disc_pct < Decimal("0.00"):
+            disc_pct = Decimal("0.00")
+        discount_amount = ((gross_before_discount * disc_pct) / Decimal("100.00")).quantize(Decimal("0.01"))
+    else:
+        disc_pct = None
+        discount_amount = Decimal(str(payload.discount_amount or 0.0)).quantize(Decimal("0.01"))
+
+    calc_total = gross_before_discount - discount_amount
     grand_total = max(Decimal("0.00"), calc_total)
 
     return {
@@ -360,6 +378,8 @@ def price_cart(request, payload: PriceCartInput):
         "igst_amount": float(total_igst),
         "packing_charge": float(packing_charge),
         "discount_amount": float(discount_amount),
+        "discount_type": discount_type,
+        "discount_percent": float(disc_pct) if disc_pct is not None else None,
         "total_amount": float(grand_total),
         "is_intra_state": is_intra_state,
         "lines": line_details
@@ -370,7 +390,6 @@ def submit_order(request, payload: SubmitOrderInput):
     """Persists a new order from Mini App and sends Telegram chat notification with PDF invoice."""
     customer = get_object_or_404(Customer, id=payload.customer_id)
     packing_charge = Decimal(str(payload.packing_charge or 0.0)).quantize(Decimal("0.01"))
-    discount_amount = Decimal(str(payload.discount_amount or 0.0)).quantize(Decimal("0.01"))
 
     gst_enabled = True if payload.gst_enabled is None else bool(payload.gst_enabled)
     custom_rate = Decimal(str(payload.gst_rate)).quantize(Decimal("0.01")) if (payload.gst_rate is not None and str(payload.gst_rate).strip() != "") else None
@@ -381,11 +400,15 @@ def submit_order(request, payload: SubmitOrderInput):
         customer_id=customer.id,
         items=payload.items,
         packing_charge=float(packing_charge),
-        discount_amount=float(discount_amount),
+        discount_amount=float(payload.discount_amount or 0.0),
+        discount_type=payload.discount_type,
+        discount_percent=payload.discount_percent,
         gst_enabled=gst_enabled,
         gst_rate=float(custom_rate) if custom_rate is not None else None
     ))
     
+    discount_amount = Decimal(str(price_res["discount_amount"])).quantize(Decimal("0.01"))
+
     for _ in range(20):
         candidate = f"ORD-2026-{random.randint(1000, 99999)}"
         if not Order.objects.filter(voucher_no=candidate).exists():
@@ -458,6 +481,8 @@ def submit_order(request, payload: SubmitOrderInput):
         "gst_rate": float(order.custom_gst_rate) if order.custom_gst_rate else None,
         "packing_charge": float(order.packing_charge),
         "discount_amount": float(order.discount_amount),
+        "discount_type": price_res.get("discount_type", "amount"),
+        "discount_percent": price_res.get("discount_percent"),
         "total_amount": float(order.total_amount),
         "pdf_url": pdf_url,
         "message": f"Order #{order.voucher_no} placed successfully!"
@@ -623,6 +648,17 @@ def edit_order_api(request, order_id: int, payload: EditOrderInput):
         order.calculate_taxes_and_totals(tenant_state_code="08")
     else:
         order.calculate_taxes_and_totals(tenant_state_code="08")
+
+    if (payload.discount_type or "").lower().strip() == "percent" and payload.discount_percent is not None:
+        disc_pct = Decimal(str(payload.discount_percent)).quantize(Decimal("0.01"))
+        gross_total = order.subtotal + order.cgst_amount + order.sgst_amount + order.igst_amount + order.packing_charge
+        order.discount_amount = ((gross_total * disc_pct) / Decimal("100.00")).quantize(Decimal("0.01"))
+        order.total_amount = max(Decimal("0.00"), gross_total - order.discount_amount)
+        order.save(update_fields=["discount_amount", "total_amount"])
+    elif payload.discount_amount is not None:
+        gross_total = order.subtotal + order.cgst_amount + order.sgst_amount + order.igst_amount + order.packing_charge
+        order.total_amount = max(Decimal("0.00"), gross_total - order.discount_amount)
+        order.save(update_fields=["total_amount"])
 
     diff = order.total_amount - old_total
     cust = order.customer

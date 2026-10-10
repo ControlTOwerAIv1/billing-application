@@ -31,10 +31,14 @@ class TestOptionalGSTFeature(unittest.TestCase):
                 "name": "Heavy Duty Plastic Pipe 20mm",
                 "category": "Pipes",
                 "base_price": 500.00,
+                "loose_price": 500.00,
                 "gst_rate": 18.00,
                 "hsn_code": "3917"
             }
         )
+        self.product.base_price = Decimal("500.00")
+        self.product.loose_price = Decimal("500.00")
+        self.product.save()
 
     def test_01_pricing_with_gst_disabled(self):
         """When gst_enabled=False, no GST tax should be added."""

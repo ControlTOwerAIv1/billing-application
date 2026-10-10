@@ -724,6 +724,56 @@
       border-color: var(--accent);
     }
 
+    /* Discount Mode Pill & Savings Badge */
+    .discount-toggle-pill {
+      display: inline-flex;
+      align-items: center;
+      background: #090d16;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 2px;
+      gap: 2px;
+    }
+    .disc-toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .disc-toggle-btn:hover {
+      color: #fff;
+    }
+    .disc-toggle-btn.active {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+    }
+    .disc-toggle-btn .disc-toggle-icon {
+      font-weight: 800;
+      font-size: 0.72rem;
+    }
+    .discount-savings-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--success);
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 6px;
+      padding: 3px 8px;
+      margin-top: 4px;
+    }
+
     /* Toggle Switch */
     .switch {
       position: relative;
@@ -1280,21 +1330,30 @@
               </div>
             </div>
 
-            <!-- Discount Amount -->
+            <!-- Discount Amount / Percentage Toggle -->
             <div class="adj-input-group">
               <div class="adj-label-row">
-                <label for="input-discount-amount">🏷️ Discount Amount</label>
-                <span class="adj-pill-hint disc">− Off</span>
+                <label for="input-discount-amount" id="label-discount-title">🏷️ Discount</label>
+                <div class="discount-toggle-pill" role="group" aria-label="Discount Type">
+                  <button type="button" class="disc-toggle-btn active" id="btn-disc-mode-raw" onclick="setDiscountMode('raw')" title="Raw discount in ₹">
+                    <span class="disc-toggle-icon">₹</span> Raw
+                  </button>
+                  <button type="button" class="disc-toggle-btn" id="btn-disc-mode-pct" onclick="setDiscountMode('percent')" title="Percentage discount on total order %">
+                    <span class="disc-toggle-icon">%</span> Percent
+                  </button>
+                </div>
               </div>
               <div class="input-with-prefix">
-                <span class="currency-symbol">₹</span>
+                <span class="currency-symbol" id="symbol-discount-prefix">₹</span>
                 <input type="number" id="input-discount-amount" min="0" step="any" placeholder="0.00" oninput="onAdjustmentChanged()">
               </div>
-              <div class="quick-chips">
-                <button type="button" class="quick-chip" onclick="setDiscountAmount(0)">₹0</button>
-                <button type="button" class="quick-chip" onclick="setDiscountAmount(50)">₹50</button>
-                <button type="button" class="quick-chip" onclick="setDiscountAmount(100)">₹100</button>
-                <button type="button" class="quick-chip" onclick="setDiscountAmount(500)">₹500</button>
+              <div id="discount-savings-badge" class="discount-savings-badge" style="display: none;"></div>
+              <div class="quick-chips" id="discount-quick-chips">
+                <button type="button" class="quick-chip" onclick="setDiscountChip(0)">₹0</button>
+                <button type="button" class="quick-chip" onclick="setDiscountChip(50)">₹50</button>
+                <button type="button" class="quick-chip" onclick="setDiscountChip(100)">₹100</button>
+                <button type="button" class="quick-chip" onclick="setDiscountChip(250)">₹250</button>
+                <button type="button" class="quick-chip" onclick="setDiscountChip(500)">₹500</button>
               </div>
             </div>
           </div>
@@ -1434,9 +1493,15 @@
           </div>
         </div>
         <div>
-          <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Discount (₹)</label>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Discount</label>
+            <div class="discount-toggle-pill" style="padding: 1px;">
+              <button type="button" class="disc-toggle-btn active" id="btn-edit-disc-raw" onclick="setEditDiscountMode('raw')" style="font-size: 0.65rem; padding: 2px 6px;">₹</button>
+              <button type="button" class="disc-toggle-btn" id="btn-edit-disc-pct" onclick="setEditDiscountMode('percent')" style="font-size: 0.65rem; padding: 2px 6px;">%</button>
+            </div>
+          </div>
           <div class="input-with-prefix" style="margin-top: 4px;">
-            <span class="currency-symbol">₹</span>
+            <span class="currency-symbol" id="symbol-edit-discount-prefix">₹</span>
             <input type="number" id="edit-order-discount" min="0" step="any" placeholder="0.00">
           </div>
         </div>
@@ -2184,25 +2249,91 @@
       }).join('');
     }
 
-    function getAdjustments() {
-      const pVal = parseFloat(document.getElementById('input-packing-charge')?.value) || 0;
-      const dVal = parseFloat(document.getElementById('input-discount-amount')?.value) || 0;
-      return {
-        packingCharge: Math.max(0, pVal),
-        discountAmount: Math.max(0, dVal)
-      };
+    let currentDiscountMode = 'raw'; // 'raw' (amount in ₹) or 'percent' (% of total order)
+
+    function setDiscountMode(mode) {
+      if (currentDiscountMode === mode) return;
+      currentDiscountMode = mode;
+
+      const rawBtn = document.getElementById('btn-disc-mode-raw');
+      const pctBtn = document.getElementById('btn-disc-mode-pct');
+      const prefix = document.getElementById('symbol-discount-prefix');
+      const input = document.getElementById('input-discount-amount');
+      const label = document.getElementById('label-discount-title');
+      const chipsContainer = document.getElementById('discount-quick-chips');
+      const badge = document.getElementById('discount-savings-badge');
+
+      if (mode === 'percent') {
+        if (rawBtn) rawBtn.classList.remove('active');
+        if (pctBtn) pctBtn.classList.add('active');
+        if (prefix) prefix.innerText = '%';
+        if (label) label.innerText = '🏷️ Discount (%)';
+        if (input) {
+          input.placeholder = 'e.g. 5, 10 or 15%';
+          input.value = '';
+        }
+        if (chipsContainer) {
+          chipsContainer.innerHTML = `
+            <button type="button" class="quick-chip" onclick="setDiscountChip(0)">0%</button>
+            <button type="button" class="quick-chip" onclick="setDiscountChip(5)">5%</button>
+            <button type="button" class="quick-chip" onclick="setDiscountChip(10)">10%</button>
+            <button type="button" class="quick-chip" onclick="setDiscountChip(15)">15%</button>
+            <button type="button" class="quick-chip" onclick="setDiscountChip(20)">20%</button>
+          `;
+        }
+      } else {
+        if (pctBtn) pctBtn.classList.remove('active');
+        if (rawBtn) rawBtn.classList.add('active');
+        if (prefix) prefix.innerText = '₹';
+        if (label) label.innerText = '🏷️ Discount (₹)';
+        if (input) {
+          input.placeholder = '0.00';
+          input.value = '';
+        }
+        if (chipsContainer) {
+          chipsContainer.innerHTML = `
+            <button type="button" class="quick-chip" onclick="setDiscountChip(0)">₹0</button>
+            <button type="button" class="quick-chip" onclick="setDiscountChip(50)">₹50</button>
+            <button type="button" class="quick-chip" onclick="setDiscountChip(100)">₹100</button>
+            <button type="button" class="quick-chip" onclick="setDiscountChip(250)">₹250</button>
+            <button type="button" class="quick-chip" onclick="setDiscountChip(500)">₹500</button>
+          `;
+        }
+      }
+      if (badge) badge.style.display = 'none';
+      onAdjustmentChanged();
     }
 
-    function setPackingCharge(amt) {
-      const el = document.getElementById('input-packing-charge');
+    function setDiscountChip(val) {
+      const el = document.getElementById('input-discount-amount');
       if (el) {
-        el.value = amt === 0 ? '' : amt.toFixed(2);
+        if (currentDiscountMode === 'percent') {
+          el.value = val === 0 ? '' : val;
+        } else {
+          el.value = val === 0 ? '' : val.toFixed(2);
+        }
         onAdjustmentChanged();
       }
     }
 
     function setDiscountAmount(amt) {
-      const el = document.getElementById('input-discount-amount');
+      setDiscountChip(amt);
+    }
+
+    function getAdjustments() {
+      const pVal = parseFloat(document.getElementById('input-packing-charge')?.value) || 0;
+      const rawInput = parseFloat(document.getElementById('input-discount-amount')?.value) || 0;
+      const isPercent = (currentDiscountMode === 'percent');
+      return {
+        packingCharge: Math.max(0, pVal),
+        discountType: isPercent ? 'percent' : 'amount',
+        discountAmount: isPercent ? 0 : Math.max(0, rawInput),
+        discountPercent: isPercent ? Math.min(100, Math.max(0, rawInput)) : null
+      };
+    }
+
+    function setPackingCharge(amt) {
+      const el = document.getElementById('input-packing-charge');
       if (el) {
         el.value = amt === 0 ? '' : amt.toFixed(2);
         onAdjustmentChanged();
@@ -2292,7 +2423,7 @@
       bottomBar.classList.add('visible');
       document.getElementById('bottom-items-count').innerText = `${totalCount} item${totalCount > 1 ? 's' : ''} in cart`;
 
-      const { packingCharge, discountAmount } = getAdjustments();
+      const { packingCharge, discountType, discountAmount, discountPercent } = getAdjustments();
       const { gstEnabled, gstRate } = getGstSettings();
 
       try {
@@ -2303,7 +2434,9 @@
             customer_id: parseInt(customerId),
             items: items,
             packing_charge: packingCharge,
+            discount_type: discountType,
             discount_amount: discountAmount,
+            discount_percent: discountPercent,
             gst_enabled: gstEnabled,
             gst_rate: gstRate
           })
@@ -2315,7 +2448,10 @@
 
         let extraNote = '';
         if (res.packing_charge > 0) extraNote += ` + Pack: ₹${res.packing_charge.toFixed(2)}`;
-        if (res.discount_amount > 0) extraNote += ` - Disc: ₹${res.discount_amount.toFixed(2)}`;
+        if (res.discount_amount > 0) {
+          const pctTag = (res.discount_type === 'percent' && res.discount_percent > 0) ? ` (${res.discount_percent}%)` : '';
+          extraNote += ` - Disc: ₹${res.discount_amount.toFixed(2)}${pctTag}`;
+        }
 
         document.getElementById('bottom-total').innerText = `₹${res.total_amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
 
@@ -2345,12 +2481,32 @@
         }
 
         const discountRow = document.getElementById('drawer-discount-row');
+        const savingsBadge = document.getElementById('discount-savings-badge');
         if (discountRow) {
           if (res.discount_amount > 0) {
             discountRow.style.display = 'flex';
-            document.getElementById('drawer-discount-val').innerText = `- ₹${res.discount_amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+            const discFormatted = res.discount_amount.toLocaleString('en-IN', {minimumFractionDigits: 2});
+            if (res.discount_type === 'percent' && res.discount_percent > 0) {
+              document.getElementById('drawer-discount-val').innerText = `- ₹${discFormatted} (${res.discount_percent}%)`;
+            } else {
+              document.getElementById('drawer-discount-val').innerText = `- ₹${discFormatted}`;
+            }
           } else {
             discountRow.style.display = 'none';
+          }
+        }
+
+        if (savingsBadge) {
+          if (res.discount_amount > 0) {
+            const discFormatted = res.discount_amount.toLocaleString('en-IN', {minimumFractionDigits: 2});
+            if (res.discount_type === 'percent' && res.discount_percent > 0) {
+              savingsBadge.innerHTML = `⚡ <b>${res.discount_percent}% off:</b> saves ₹${discFormatted} on total order`;
+            } else {
+              savingsBadge.innerHTML = `⚡ <b>Flat Discount:</b> saves ₹${discFormatted} on total order`;
+            }
+            savingsBadge.style.display = 'inline-flex';
+          } else {
+            savingsBadge.style.display = 'none';
           }
         }
 
@@ -2426,7 +2582,7 @@
       submitBtn.innerText = "Placing Order...";
 
       const chatId = urlParams.get('chat_id') || (tg?.initDataUnsafe?.user?.id);
-      const { packingCharge, discountAmount } = getAdjustments();
+      const { packingCharge, discountType, discountAmount, discountPercent } = getAdjustments();
       const { gstEnabled, gstRate } = getGstSettings();
       const transportVal = document.getElementById('select-order-transport')?.value;
       const transportId = transportVal ? parseInt(transportVal) : null;
@@ -2440,7 +2596,9 @@
             items: items,
             chat_id: chatId ? parseInt(chatId) : null,
             packing_charge: packingCharge,
+            discount_type: discountType,
             discount_amount: discountAmount,
+            discount_percent: discountPercent,
             transport_id: transportId,
             gst_enabled: gstEnabled,
             gst_rate: gstRate
@@ -2452,6 +2610,8 @@
         cartState = {};
         if (document.getElementById('input-packing-charge')) document.getElementById('input-packing-charge').value = '';
         if (document.getElementById('input-discount-amount')) document.getElementById('input-discount-amount').value = '';
+        const badge = document.getElementById('discount-savings-badge');
+        if (badge) badge.style.display = 'none';
         renderCatalog();
         document.getElementById('bottom-bar').classList.remove('visible');
 
@@ -2473,7 +2633,9 @@
         if (modalDiscRow) {
           if (res.discount_amount > 0) {
             modalDiscRow.style.display = 'flex';
-            document.getElementById('modal-discount').innerText = `-₹${res.discount_amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+            const discFormatted = res.discount_amount.toLocaleString('en-IN', {minimumFractionDigits: 2});
+            const pctNote = (res.discount_type === 'percent' && res.discount_percent > 0) ? ` (${res.discount_percent}% off)` : '';
+            document.getElementById('modal-discount').innerText = `-₹${discFormatted}${pctNote}`;
           } else {
             modalDiscRow.style.display = 'none';
           }
@@ -2550,6 +2712,33 @@
       }
     }
 
+    let currentEditDiscountMode = 'raw';
+
+    function setEditDiscountMode(mode) {
+      currentEditDiscountMode = mode;
+      const rawBtn = document.getElementById('btn-edit-disc-raw');
+      const pctBtn = document.getElementById('btn-edit-disc-pct');
+      const prefix = document.getElementById('symbol-edit-discount-prefix');
+      const input = document.getElementById('edit-order-discount');
+      if (mode === 'percent') {
+        if (rawBtn) rawBtn.classList.remove('active');
+        if (pctBtn) pctBtn.classList.add('active');
+        if (prefix) prefix.innerText = '%';
+        if (input) {
+          input.placeholder = 'e.g. 5 or 10%';
+          input.value = '';
+        }
+      } else {
+        if (pctBtn) pctBtn.classList.remove('active');
+        if (rawBtn) rawBtn.classList.add('active');
+        if (prefix) prefix.innerText = '₹';
+        if (input) {
+          input.placeholder = '0.00';
+          input.value = '';
+        }
+      }
+    }
+
     async function openEditOrderModal(orderId) {
       currentEditingOrderId = orderId;
       try {
@@ -2562,6 +2751,7 @@
           document.getElementById('edit-order-transport').value = data.transport_id || 0;
         }
         document.getElementById('edit-order-packing').value = data.packing_charge ? data.packing_charge.toFixed(2) : '';
+        setEditDiscountMode('raw');
         document.getElementById('edit-order-discount').value = data.discount_amount ? data.discount_amount.toFixed(2) : '';
 
         const isGstEnabled = (data.gst_enabled !== false);
@@ -2626,7 +2816,8 @@
       if (!currentEditingOrderId) return;
       const newStatus = document.getElementById('edit-order-status').value;
       const packing = parseFloat(document.getElementById('edit-order-packing')?.value) || 0.0;
-      const discount = parseFloat(document.getElementById('edit-order-discount')?.value) || 0.0;
+      const isEditPercent = (currentEditDiscountMode === 'percent');
+      const discountVal = parseFloat(document.getElementById('edit-order-discount')?.value) || 0.0;
       const transportId = parseInt(document.getElementById('edit-order-transport')?.value) || 0;
       const editGstToggle = document.getElementById('edit-order-gst-toggle');
       const isToggleChecked = editGstToggle ? editGstToggle.checked : true;
@@ -2642,7 +2833,9 @@
           body: JSON.stringify({
             status: newStatus,
             packing_charge: packing,
-            discount_amount: discount,
+            discount_type: isEditPercent ? 'percent' : 'amount',
+            discount_amount: isEditPercent ? 0 : discountVal,
+            discount_percent: isEditPercent ? discountVal : null,
             transport_id: transportId,
             gst_enabled: editGstEnabled,
             gst_rate: editGstRate,

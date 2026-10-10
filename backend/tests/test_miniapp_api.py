@@ -29,10 +29,14 @@ class TestMiniAppAPI(unittest.TestCase):
                 "name": "Test Stationery A4 Paper",
                 "category": "Stationery",
                 "base_price": 500.00,
+                "loose_price": 500.00,
                 "gst_rate": 18.00,
                 "hsn_code": "4802"
             }
         )
+        self.product.base_price = Decimal("500.00")
+        self.product.loose_price = Decimal("500.00")
+        self.product.save()
 
     def test_01_cart_init_endpoint(self):
         response = self.client.get(f"/api/cart/init?customer_id={self.customer.id}")
@@ -147,5 +151,67 @@ class TestMiniAppAPI(unittest.TestCase):
         self.assertIn("discount_amount", detail_data)
         print("[OK] Mini App List & Detail Orders API test passed.")
 
+    def test_06_percentage_discount_pricing_and_submission(self):
+        # 1. Price cart with 10% discount on total
+        payload = {
+            "customer_id": self.customer.id,
+            "items": [{"product_id": self.product.id, "quantity": 2}],
+            "packing_charge": 50.0,
+            "discount_type": "percent",
+            "discount_percent": 10.0
+        }
+        res = self.client.post("/api/cart/price", data=payload, content_type="application/json")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        # Gross before discount: 1000 subtotal + 180 GST + 50 packing = 1230.0
+        # 10% discount = 123.0
+        self.assertEqual(data["discount_amount"], 123.0)
+        self.assertEqual(data["discount_type"], "percent")
+        self.assertEqual(data["discount_percent"], 10.0)
+        self.assertEqual(data["total_amount"], 1107.0)
+
+        # 2. Submit order with 10% discount
+        submit_res = self.client.post("/api/cart/submit", data=payload, content_type="application/json")
+        self.assertEqual(submit_res.status_code, 200)
+        sub_data = submit_res.json()
+        self.assertEqual(sub_data["discount_amount"], 123.0)
+        self.assertEqual(sub_data["total_amount"], 1107.0)
+
+        order = Order.objects.get(id=sub_data["order_id"])
+        self.assertEqual(float(order.discount_amount), 123.0)
+        self.assertEqual(float(order.total_amount), 1107.0)
+
+        # 3. Verify PDF generation works
+        pdf_bytes = generate_order_pdf_bytes(order)
+        self.assertTrue(pdf_bytes.startswith(b"%PDF"))
+        print(f"[OK] Percentage discount test passed: 10% on Rs. 1,230 = -Rs. 123.00, Net Total: Rs. {order.total_amount}")
+
+    def test_07_edit_order_with_percentage_discount(self):
+        # Create an order
+        submit_payload = {
+            "customer_id": self.customer.id,
+            "items": [{"product_id": self.product.id, "quantity": 2}],
+            "packing_charge": 50.0,
+            "discount_amount": 0.0
+        }
+        res = self.client.post("/api/cart/submit", data=submit_payload, content_type="application/json")
+        order_id = res.json()["order_id"]
+
+        # Edit order with 5% discount
+        edit_payload = {
+            "discount_type": "percent",
+            "discount_percent": 5.0,
+            "packing_charge": 50.0
+        }
+        edit_res = self.client.post(f"/api/orders/{order_id}/edit", data=edit_payload, content_type="application/json")
+        self.assertEqual(edit_res.status_code, 200)
+
+        order = Order.objects.get(id=order_id)
+        # Gross = 1000 + 180 + 50 = 1230. 5% = 61.50
+        self.assertEqual(float(order.discount_amount), 61.5)
+        self.assertEqual(float(order.total_amount), 1168.5)
+        print(f"[OK] Edit order percentage discount passed: 5% on Rs. 1,230 = -Rs. 61.50, Net Total: Rs. {order.total_amount}")
+
 if __name__ == "__main__":
     unittest.main()
+
