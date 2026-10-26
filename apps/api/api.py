@@ -350,7 +350,13 @@ def cart_init(request, customer_id: Optional[int] = None):
 @api.post("/cart/price")
 def price_cart(request, payload: PriceCartInput):
     """Computes line totals and GST server-side with unit type support."""
-    customer = get_object_or_404(Customer, id=payload.customer_id)
+    customer = None
+    if payload.customer_id:
+        customer = Customer.objects.filter(id=payload.customer_id, soft_deleted=False).first()
+    if not customer:
+        customer = Customer.objects.filter(soft_deleted=False).first()
+    if not customer:
+        customer = get_object_or_404(Customer, id=payload.customer_id)
     subtotal = Decimal("0.00")
     total_cgst = Decimal("0.00")
     total_sgst = Decimal("0.00")
@@ -457,7 +463,13 @@ def price_cart(request, payload: PriceCartInput):
 @api.post("/cart/submit")
 def submit_order(request, payload: SubmitOrderInput):
     """Persists a new order from Mini App and sends Telegram chat notification with PDF invoice."""
-    customer = get_object_or_404(Customer, id=payload.customer_id)
+    customer = None
+    if payload.customer_id:
+        customer = Customer.objects.filter(id=payload.customer_id, soft_deleted=False).first()
+    if not customer:
+        customer = Customer.objects.filter(soft_deleted=False).first()
+    if not customer:
+        customer = get_object_or_404(Customer, id=payload.customer_id)
     packing_charge = Decimal(str(payload.packing_charge or 0.0)).quantize(Decimal("0.01"))
 
     gst_enabled = True if payload.gst_enabled is None else bool(payload.gst_enabled)

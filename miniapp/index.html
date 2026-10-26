@@ -2741,6 +2741,7 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     let customerId = urlParams.get('customer_id') ? parseInt(urlParams.get('customer_id')) : null;
+<<<<<<< HEAD
 
     // Subpath prefix detection for reverse-proxy deployments (e.g. /hindustan-plast)
     const APP_PREFIX = window.location.pathname.includes('/miniapp')
@@ -2761,6 +2762,8 @@
       }
       return `${APP_PREFIX}${cleanPath}`;
     }
+=======
+>>>>>>> 2b80cfe (changes)
 
     let customerData = null;
     let catalogData = [];
@@ -2874,7 +2877,12 @@
 
     async function initApp() {
       try {
+<<<<<<< HEAD
         const resp = await fetch(`/api/cart/init?customer_id=${customerId}`);
+=======
+        const initUrl = customerId ? `${APP_PREFIX}/api/cart/init?customer_id=${customerId}` : `${APP_PREFIX}/api/cart/init`;
+        const resp = await fetch(initUrl);
+>>>>>>> 2b80cfe (changes)
         const data = await resp.json();
         customerData = data.customer;
         if (customerData && customerData.id) {
@@ -3911,7 +3919,12 @@
       const { gstEnabled, gstRate } = getGstSettings();
 
       try {
+<<<<<<< HEAD
         const resp = await fetch('/api/cart/price', {
+=======
+        const cid = customerId || (customerData && customerData.id);
+        const resp = await fetch(`${APP_PREFIX}/api/cart/price`, {
+>>>>>>> 2b80cfe (changes)
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -4222,7 +4235,12 @@
       const hideProductRate = document.getElementById('toggle-hide-rate-switch')?.checked || false;
 
       try {
+<<<<<<< HEAD
         const resp = await fetch('/api/cart/submit', {
+=======
+        const cid = customerId || (customerData && customerData.id);
+        const resp = await fetch(`${APP_PREFIX}/api/cart/submit`, {
+>>>>>>> 2b80cfe (changes)
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -4330,7 +4348,13 @@
       container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">Loading your orders...</div>`;
 
       try {
+<<<<<<< HEAD
         const resp = await fetch(`/api/orders?customer_id=${customerId}`);
+=======
+        const cid = customerId || (customerData && customerData.id);
+        const ordersUrl = cid ? `${APP_PREFIX}/api/orders?customer_id=${cid}` : `${APP_PREFIX}/api/orders`;
+        const resp = await fetch(ordersUrl);
+>>>>>>> 2b80cfe (changes)
         const res = await resp.json();
         const orders = res.orders || [];
 
