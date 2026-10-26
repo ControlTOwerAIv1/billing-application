@@ -575,21 +575,405 @@
       gap: 16px;
     }
 
-    /* Cart Line Item Card */
-    .cart-item-card {
-      background: var(--card-bg);
+    /* 2-Phase Checkout Stepper & Controls */
+    .checkout-stepper-bar {
+      display: flex;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.85);
       border: 1px solid var(--card-border);
-      border-radius: var(--radius-sm);
-      padding: 12px;
+      border-radius: 12px;
+      padding: 5px;
+      gap: 6px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .checkout-step-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      background: transparent;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .checkout-step-btn:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .checkout-step-btn.active {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.18));
+      border-color: rgba(129, 140, 248, 0.6);
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.2);
+    }
+    .checkout-step-btn.completed {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+    .checkout-step-btn .step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #1e293b;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .checkout-step-btn.active .step-num {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+    }
+    .checkout-step-btn.completed .step-num {
+      background: #22c55e;
+      color: #0f172a;
+      font-weight: 900;
+    }
+    .checkout-step-btn .step-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      text-align: left;
+    }
+    .checkout-step-btn .step-label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      line-height: 1.1;
+    }
+    .checkout-step-btn.active .step-label {
+      color: #a5b4fc;
+    }
+    .checkout-step-btn.completed .step-label {
+      color: #86efac;
+    }
+    .checkout-step-btn .step-name {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+      margin-top: 2px;
+    }
+    .checkout-step-btn.active .step-name {
+      color: #fff;
+    }
+    .checkout-step-btn.completed .step-name {
+      color: #e2e8f0;
+    }
+    .checkout-step-arrow {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      padding: 0 2px;
+      user-select: none;
+    }
+
+    /* Phase Containers */
+    .checkout-phase-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      width: 100%;
+    }
+    .phase-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .phase-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .phase-subtitle {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .negotiation-notice-card {
+      background: rgba(30, 41, 59, 0.45);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .phase1-summary-box {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+    .checkout-glance-bar {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-edit-glance {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-edit-glance:hover {
+      background: rgba(56, 189, 248, 0.22);
+      border-color: #38bdf8;
+    }
+
+    /* Cart Line Item Card with Dual Price Negotiation */
+    .cart-negotiate-card {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+    .cart-negotiate-card.is-custom {
+      border-color: rgba(56, 189, 248, 0.55);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(12, 74, 110, 0.12));
+      box-shadow: 0 4px 18px rgba(56, 189, 248, 0.08);
+    }
+    .cart-card-top-row {
       display: flex;
       gap: 12px;
       align-items: center;
     }
-    .cart-item-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #1e293b; }
-    .cart-item-info { flex: 1; }
-    .cart-item-name { font-weight: 700; font-size: 0.85rem; color: var(--text-main); margin-bottom: 2px; }
-    .cart-item-price { font-size: 0.8rem; color: var(--accent); font-weight: 600; }
-    .cart-item-controls { display: flex; align-items: center; gap: 6px; }
+    .cart-item-img {
+      width: 52px;
+      height: 52px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #1e293b;
+      flex-shrink: 0;
+    }
+    .cart-item-name {
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      margin-bottom: 2px;
+    }
+    .cart-group-tag {
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .unit-type-pill {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .btn-remove-item {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #f87171;
+      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.15s;
+    }
+    .btn-remove-item:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+    }
+
+    /* Dual Price & Total Edit Grid */
+    .cart-pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    @media (max-width: 520px) {
+      .cart-pricing-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .cart-reset-col {
+        grid-column: span 2;
+      }
+    }
+    .cart-input-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .cart-input-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .cart-input-box {
+      display: flex;
+      align-items: center;
+      background: #090d16;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .cart-input-box:focus-within {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+    .cart-input-box.custom-val {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.05);
+    }
+    .cart-input-box .prefix {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-right: 4px;
+      user-select: none;
+    }
+    .cart-input-box input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      outline: none;
+      min-width: 0;
+    }
+    .cart-input-box.custom-val input {
+      color: #38bdf8;
+    }
+    .btn-reset-price-item {
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      color: #fbbf24;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+      white-space: nowrap;
+      height: 32px;
+      justify-content: center;
+    }
+    .btn-reset-price-item:hover {
+      background: rgba(251, 191, 36, 0.25);
+      border-color: #fbbf24;
+      transform: translateY(-1px);
+    }
+    .standard-price-badge {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      white-space: nowrap;
+    }
+    .btn-reset-all-pill {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #f87171;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .btn-reset-all-pill:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #f87171;
+    }
+    .cart-rate-status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      font-size: 0.72rem;
+    }
+    .badge-saving {
+      color: #4ade80;
+      font-weight: 700;
+    }
+    .badge-adjusted {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    .btn-drawer-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: var(--text-secondary);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-drawer-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
 
     /* Order Summary Breakdown */
     .summary-card {
@@ -724,6 +1108,43 @@
       border-color: var(--accent);
     }
 
+    /* Order Note Textarea & Quick Chips */
+    .textarea-note {
+      width: 100%;
+      background: #090d16;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      padding: 9px 12px;
+      font-size: 0.84rem;
+      font-family: inherit;
+      line-height: 1.4;
+      resize: vertical;
+      min-height: 56px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .textarea-note:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }
+    .quick-chip-note {
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 6px;
+      color: #93c5fd;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quick-chip-note:hover {
+      background: rgba(59, 130, 246, 0.22);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
     /* Discount Mode Pill & Savings Badge */
     .discount-toggle-pill {
       display: inline-flex;
@@ -824,6 +1245,46 @@
       font-size: 1rem;
       cursor: pointer;
       box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .btn-whatsapp {
+      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%) !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 16px rgba(37, 211, 102, 0.4) !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-whatsapp:hover {
+      filter: brightness(1.08);
+      box-shadow: 0 6px 22px rgba(37, 211, 102, 0.55) !important;
+      transform: translateY(-1px);
+    }
+    .btn-whatsapp:active {
+      transform: translateY(1px);
+    }
+
+    .btn-whatsapp-sm {
+      background: rgba(37, 211, 102, 0.12) !important;
+      border: 1px solid rgba(37, 211, 102, 0.45) !important;
+      color: #25D366 !important;
+      font-weight: 700 !important;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-whatsapp-sm:hover {
+      background: #25D366 !important;
+      color: #ffffff !important;
+      box-shadow: 0 2px 10px rgba(37, 211, 102, 0.4);
     }
 
     /* Modal Dialogs */
@@ -1294,151 +1755,280 @@
   <!-- Centered Cart & Checkout Modal -->
   <div class="drawer-overlay" id="cart-drawer" onclick="onCartOverlayClick(event)">
     <div class="drawer-panel" onclick="event.stopPropagation()">
-      <div class="drawer-header">
-        <div class="drawer-title">🛒 Cart & Checkout</div>
-        <button class="drawer-close" onclick="closeCartDrawer()">✕</button>
-      </div>
-
-      <div class="drawer-body">
-        <div id="cart-lines-container" style="display: flex; flex-direction: column; gap: 10px;">
-          <!-- Injected via JS -->
+      <div class="drawer-header" style="flex-direction: column; align-items: stretch; gap: 12px; padding: 16px 20px 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="drawer-title" id="checkout-modal-title">🛒 Step 1: Review Items & Negotiate Prices</div>
+          <button class="drawer-close" onclick="closeCartDrawer()">✕</button>
         </div>
 
-        <!-- Order Adjustments (Packing Charge & Discount Amount) -->
-        <div class="adjustments-card" id="cart-adjustments-card">
-          <div class="adjustments-header">
-            <span class="adjustments-title">⚡ Additional Charges & Discounts</span>
-            <span class="adjustments-badge">Optional</span>
+        <!-- 2-Phase Checkout Stepper Indicator -->
+        <div class="checkout-stepper-bar">
+          <div class="checkout-step-btn active" id="tab-step-1" onclick="switchCheckoutPhase(1)" title="Go to Phase 1: Review Products & Prices">
+            <span class="step-num">1</span>
+            <div class="step-info">
+              <span class="step-label">Phase 1</span>
+              <span class="step-name">Review & Negotiate</span>
+            </div>
+          </div>
+          <div class="checkout-step-arrow">➔</div>
+          <div class="checkout-step-btn" id="tab-step-2" onclick="switchCheckoutPhase(2)" title="Go to Phase 2: Charges & Checkout">
+            <span class="step-num">2</span>
+            <div class="step-info">
+              <span class="step-label">Phase 2</span>
+              <span class="step-name">Charges & Place Order</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-body" id="cart-drawer-body">
+        <!-- PHASE 1: Products List & Dual Price/Amount Negotiation -->
+        <div id="checkout-phase-1" class="checkout-phase-container">
+          <div class="phase-header-row">
+            <div>
+              <div class="phase-title">📦 Products in this Order</div>
+              <div class="phase-subtitle">Review items, quantities, and negotiated rates for this order</div>
+            </div>
+            <button type="button" class="btn-reset-all-pill" id="btn-reset-all-prices" onclick="resetAllCartCustomRates()" style="display: none;">
+              ↺ Reset All Prices
+            </button>
           </div>
 
-          <div class="adjustments-grid">
-            <!-- Packing Charge -->
-            <div class="adj-input-group">
-              <div class="adj-label-row">
-                <label for="input-packing-charge">📦 Packing Charge</label>
-                <span class="adj-pill-hint">+ Extra</span>
-              </div>
-              <div class="input-with-prefix">
-                <span class="currency-symbol">₹</span>
-                <input type="number" id="input-packing-charge" min="0" step="any" placeholder="0.00" oninput="onAdjustmentChanged()">
-              </div>
-              <div class="quick-chips">
-                <button type="button" class="quick-chip" onclick="setPackingCharge(0)">₹0</button>
-                <button type="button" class="quick-chip" onclick="setPackingCharge(50)">₹50</button>
-                <button type="button" class="quick-chip" onclick="setPackingCharge(100)">₹100</button>
-                <button type="button" class="quick-chip" onclick="setPackingCharge(200)">₹200</button>
-              </div>
-            </div>
-
-            <!-- Discount Amount / Percentage Toggle -->
-            <div class="adj-input-group">
-              <div class="adj-label-row">
-                <label for="input-discount-amount" id="label-discount-title">🏷️ Discount</label>
-                <div class="discount-toggle-pill" role="group" aria-label="Discount Type">
-                  <button type="button" class="disc-toggle-btn active" id="btn-disc-mode-raw" onclick="setDiscountMode('raw')" title="Raw discount in ₹">
-                    <span class="disc-toggle-icon">₹</span> Raw
-                  </button>
-                  <button type="button" class="disc-toggle-btn" id="btn-disc-mode-pct" onclick="setDiscountMode('percent')" title="Percentage discount on total order %">
-                    <span class="disc-toggle-icon">%</span> Percent
-                  </button>
-                </div>
-              </div>
-              <div class="input-with-prefix">
-                <span class="currency-symbol" id="symbol-discount-prefix">₹</span>
-                <input type="number" id="input-discount-amount" min="0" step="any" placeholder="0.00" oninput="onAdjustmentChanged()">
-              </div>
-              <div id="discount-savings-badge" class="discount-savings-badge" style="display: none;"></div>
-              <div class="quick-chips" id="discount-quick-chips">
-                <button type="button" class="quick-chip" onclick="setDiscountChip(0)">₹0</button>
-                <button type="button" class="quick-chip" onclick="setDiscountChip(50)">₹50</button>
-                <button type="button" class="quick-chip" onclick="setDiscountChip(100)">₹100</button>
-                <button type="button" class="quick-chip" onclick="setDiscountChip(250)">₹250</button>
-                <button type="button" class="quick-chip" onclick="setDiscountChip(500)">₹500</button>
-              </div>
+          <div class="negotiation-notice-card">
+            <span style="font-size: 1.15rem; line-height: 1;">🤝</span>
+            <div style="font-size: 0.76rem; color: #cbd5e1; line-height: 1.4;">
+              <b>Price Negotiation:</b> Edit <b>Unit Price</b> or <b>Total Amount</b> for any product below. Custom rates apply <i>only to this order</i> without altering catalog master rates.
             </div>
           </div>
 
-          <!-- GST Optional Toggle & Rate Input -->
-          <div class="adj-input-group" style="margin-top: 6px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+          <!-- Product items container -->
+          <div id="cart-lines-container" style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Injected via renderCartDrawerLines -->
+          </div>
+
+          <!-- Phase 1 Summary Box -->
+          <div id="phase1-summary-box" class="phase1-summary-box">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <label for="toggle-gst-switch" style="font-weight: 700; font-size: 0.85rem; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                  🏛️ Apply GST (Tax Invoice)
-                </label>
-                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
-                  Enable to calculate GST and show tax details on PDF invoice
-                </div>
-              </div>
-              <label class="switch">
-                <input type="checkbox" id="toggle-gst-switch" checked onchange="onGstToggleChanged()">
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <!-- GST Percentage Input (Visible only if toggle is checked) -->
-            <div id="gst-rate-container" style="margin-top: 10px; background: rgba(15, 23, 42, 0.75); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--card-border);">
-              <div class="adj-label-row">
-                <label for="input-gst-rate" style="font-size: 0.78rem; font-weight: 700; color: var(--accent);">GST Rate Percentage (%)</label>
-                <span class="adj-pill-hint">Rate %</span>
-              </div>
-              <div class="input-with-prefix" style="margin-top: 4px;">
-                <span class="currency-symbol" style="font-size: 0.8rem; font-weight: 700;">%</span>
-                <input type="number" id="input-gst-rate" min="0" max="100" step="any" value="18" placeholder="e.g. 18 (blank or 0 hides GST)" oninput="onGstRateChanged()">
-              </div>
-              <div class="quick-chips" style="margin-top: 6px;">
-                <button type="button" class="quick-chip" onclick="setGstRate(0)">0%</button>
-                <button type="button" class="quick-chip" onclick="setGstRate(5)">5%</button>
-                <button type="button" class="quick-chip" onclick="setGstRate(12)">12%</button>
-                <button type="button" class="quick-chip" onclick="setGstRate(18)">18%</button>
-                <button type="button" class="quick-chip" onclick="setGstRate(28)">28%</button>
+              <span style="color: var(--text-secondary); font-size: 0.85rem;">Items Count: <b id="phase1-items-count" style="color: #fff;">0 items</b></span>
+              <div style="text-align: right;">
+                <span style="font-size: 0.74rem; color: var(--text-muted); display: block;">Items Subtotal</span>
+                <span id="phase1-subtotal" style="font-size: 1.15rem; font-weight: 800; color: var(--accent);">₹0.00</span>
               </div>
             </div>
-          </div>
-
-          <!-- Transport Carrier Selection -->
-          <div class="adj-input-group" style="margin-top: 6px; border-top: 1px solid var(--card-border); padding-top: 12px;">
-            <div class="adj-label-row">
-              <label for="select-order-transport">🚚 Dispatch Via Transport</label>
-              <span class="adj-pill-hint">Carrier</span>
+            <div id="phase1-savings-row" style="display: none; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255, 255, 255, 0.1); font-size: 0.78rem; color: #4ade80;">
+              <span>⚡ Negotiated Savings for Order:</span>
+              <b id="phase1-savings-amount" style="font-size: 0.85rem;">₹0.00</b>
             </div>
-            <select id="select-order-transport" style="width: 100%; background: #090d16; border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: #fff; padding: 9px 12px; font-size: 0.88rem; font-weight: 600; outline: none;" onchange="onTransportChanged()">
-              <option value="">Default (Direct / Self Transport)</option>
-            </select>
           </div>
         </div>
 
-        <div class="summary-card" id="cart-summary-card">
-          <div class="summary-line" id="drawer-transport-row">
-            <span>Dispatch Transport:</span>
-            <span id="drawer-transport-val" style="color: var(--accent); font-weight: 600;">Direct / Self</span>
+        <!-- PHASE 2: Charges, Transport, Note & Final Review -->
+        <div id="checkout-phase-2" class="checkout-phase-container" style="display: none;">
+          <!-- Quick Glance of Items -->
+          <div class="checkout-glance-bar">
+            <div>
+              <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); display: block; font-weight: 700;">Order Items</span>
+              <span id="glance-item-summary" style="font-size: 0.92rem; font-weight: 700; color: #fff;">0 items • ₹0.00</span>
+            </div>
+            <button type="button" class="btn-edit-glance" onclick="switchCheckoutPhase(1)">
+              ✏️ Edit Products / Rates
+            </button>
           </div>
-          <div class="summary-line">
-            <span>Subtotal (Taxable):</span>
-            <span id="drawer-subtotal">₹0.00</span>
+
+          <!-- Order Adjustments (Packing Charge & Discount Amount) -->
+          <div class="adjustments-card" id="cart-adjustments-card">
+            <div class="adjustments-header">
+              <span class="adjustments-title">⚡ Additional Charges & Discounts</span>
+              <span class="adjustments-badge">Optional</span>
+            </div>
+
+            <div class="adjustments-grid">
+              <!-- Packing Charge -->
+              <div class="adj-input-group">
+                <div class="adj-label-row">
+                  <label for="input-packing-charge">📦 Packing Charge</label>
+                  <span class="adj-pill-hint">+ Extra</span>
+                </div>
+                <div class="input-with-prefix">
+                  <span class="currency-symbol">₹</span>
+                  <input type="number" id="input-packing-charge" min="0" step="any" placeholder="0.00" oninput="onAdjustmentChanged()">
+                </div>
+                <div class="quick-chips">
+                  <button type="button" class="quick-chip" onclick="setPackingCharge(0)">₹0</button>
+                  <button type="button" class="quick-chip" onclick="setPackingCharge(50)">₹50</button>
+                  <button type="button" class="quick-chip" onclick="setPackingCharge(100)">₹100</button>
+                  <button type="button" class="quick-chip" onclick="setPackingCharge(200)">₹200</button>
+                </div>
+              </div>
+
+              <!-- Discount Amount / Percentage Toggle -->
+              <div class="adj-input-group">
+                <div class="adj-label-row">
+                  <label for="input-discount-amount" id="label-discount-title">🏷️ Discount</label>
+                  <div class="discount-toggle-pill" role="group" aria-label="Discount Type">
+                    <button type="button" class="disc-toggle-btn active" id="btn-disc-mode-raw" onclick="setDiscountMode('raw')" title="Raw discount in ₹">
+                      <span class="disc-toggle-icon">₹</span> Raw
+                    </button>
+                    <button type="button" class="disc-toggle-btn" id="btn-disc-mode-pct" onclick="setDiscountMode('percent')" title="Percentage discount on total order %">
+                      <span class="disc-toggle-icon">%</span> Percent
+                    </button>
+                  </div>
+                </div>
+                <div class="input-with-prefix">
+                  <span class="currency-symbol" id="symbol-discount-prefix">₹</span>
+                  <input type="number" id="input-discount-amount" min="0" step="any" placeholder="0.00" oninput="onAdjustmentChanged()">
+                </div>
+                <div id="discount-savings-badge" class="discount-savings-badge" style="display: none;"></div>
+                <div class="quick-chips" id="discount-quick-chips">
+                  <button type="button" class="quick-chip" onclick="setDiscountChip(0)">₹0</button>
+                  <button type="button" class="quick-chip" onclick="setDiscountChip(50)">₹50</button>
+                  <button type="button" class="quick-chip" onclick="setDiscountChip(100)">₹100</button>
+                  <button type="button" class="quick-chip" onclick="setDiscountChip(250)">₹250</button>
+                  <button type="button" class="quick-chip" onclick="setDiscountChip(500)">₹500</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- GST Optional Toggle & Rate Input -->
+            <div class="adj-input-group" style="margin-top: 6px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <label for="toggle-gst-switch" style="font-weight: 700; font-size: 0.85rem; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    🏛️ Apply GST (Tax Invoice)
+                  </label>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                    Enable to calculate GST and show tax details on PDF invoice
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-gst-switch" checked onchange="onGstToggleChanged()">
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <!-- GST Percentage Input (Visible only if toggle is checked) -->
+              <div id="gst-rate-container" style="margin-top: 10px; background: rgba(15, 23, 42, 0.75); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--card-border);">
+                <div class="adj-label-row">
+                  <label for="input-gst-rate" style="font-size: 0.78rem; font-weight: 700; color: var(--accent);">GST Rate Percentage (%)</label>
+                  <span class="adj-pill-hint">Rate %</span>
+                </div>
+                <div class="input-with-prefix" style="margin-top: 4px;">
+                  <span class="currency-symbol" style="font-size: 0.8rem; font-weight: 700;">%</span>
+                  <input type="number" id="input-gst-rate" min="0" max="100" step="any" value="18" placeholder="e.g. 18 (blank or 0 hides GST)" oninput="onGstRateChanged()">
+                </div>
+                <div class="quick-chips" style="margin-top: 6px;">
+                  <button type="button" class="quick-chip" onclick="setGstRate(0)">0%</button>
+                  <button type="button" class="quick-chip" onclick="setGstRate(5)">5%</button>
+                  <button type="button" class="quick-chip" onclick="setGstRate(12)">12%</button>
+                  <button type="button" class="quick-chip" onclick="setGstRate(18)">18%</button>
+                  <button type="button" class="quick-chip" onclick="setGstRate(28)">28%</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Transport Carrier Selection -->
+            <div class="adj-input-group" style="margin-top: 6px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+              <div class="adj-label-row">
+                <label for="select-order-transport">🚚 Dispatch Via Transport</label>
+                <span class="adj-pill-hint">Carrier</span>
+              </div>
+              <select id="select-order-transport" style="width: 100%; background: #090d16; border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: #fff; padding: 9px 12px; font-size: 0.88rem; font-weight: 600; outline: none;" onchange="onTransportChanged()">
+                <option value="">Default (Direct / Self Transport)</option>
+              </select>
+            </div>
+
+            <!-- Order Note / Special Instructions -->
+            <div class="adj-input-group" style="margin-top: 6px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+              <div class="adj-label-row">
+                <label for="input-order-note">📝 Order Note / Instructions</label>
+                <span class="adj-pill-hint">Optional</span>
+              </div>
+              <textarea id="input-order-note" class="textarea-note" rows="2" placeholder="e.g. Deliver before 5 PM, urgent dispatch, pack in cartons..." oninput="onNoteChanged()"></textarea>
+              <div class="quick-chips" style="margin-top: 6px;">
+                <button type="button" class="quick-chip-note" onclick="addNoteChip('⚡ Urgent dispatch')">⚡ Urgent</button>
+                <button type="button" class="quick-chip-note" onclick="addNoteChip('📦 Extra packing')">📦 Extra Pack</button>
+                <button type="button" class="quick-chip-note" onclick="addNoteChip('📞 Call before delivery')">📞 Call first</button>
+                <button type="button" class="quick-chip-note" onclick="addNoteChip('🏢 Deliver at Godown')">🏢 Godown</button>
+                <button type="button" class="quick-chip-note" onclick="clearNote()" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3);">✕ Clear</button>
+              </div>
+            </div>
+
+            <!-- Omit Prices & Amounts Toggle -->
+            <div class="adj-input-group" style="margin-top: 6px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <label for="toggle-hide-rate-switch" style="font-weight: 700; font-size: 0.85rem; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    🚫 Do Not Show Prices & Amounts
+                  </label>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                    Generate document with items & quantities only (prices and totals are omitted)
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="toggle-hide-rate-switch" onchange="onHideRateToggleChanged()">
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
           </div>
-          <div class="summary-line">
-            <span id="drawer-tax-label">GST Tax:</span>
-            <span id="drawer-tax-val">₹0.00</span>
-          </div>
-          <div class="summary-line adj-charge" id="drawer-packing-row" style="display: none;">
-            <span>Packing & Handling:</span>
-            <span id="drawer-packing-val">+ ₹0.00</span>
-          </div>
-          <div class="summary-line adj-disc" id="drawer-discount-row" style="display: none;">
-            <span>Discount Applied:</span>
-            <span id="drawer-discount-val">- ₹0.00</span>
-          </div>
-          <div class="summary-line total">
-            <span>Grand Total:</span>
-            <span id="drawer-grand-total" style="color: var(--accent);">₹0.00</span>
+
+          <div class="summary-card" id="cart-summary-card">
+            <div class="summary-line" id="drawer-transport-row">
+              <span>Dispatch Transport:</span>
+              <span id="drawer-transport-val" style="color: var(--accent); font-weight: 600;">Direct / Self</span>
+            </div>
+            <div class="summary-line" id="drawer-note-row" style="display: none;">
+              <span>Order Note:</span>
+              <span id="drawer-note-val" style="color: #93c5fd; font-weight: 500; font-size: 0.78rem; max-width: 200px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</span>
+            </div>
+            <div class="summary-line" id="drawer-hide-rate-row" style="display: none;">
+              <span>Prices:</span>
+              <span id="drawer-hide-rate-val" style="color: #fbbf24; font-weight: 600; font-size: 0.78rem;">🚫 Prices Omitted</span>
+            </div>
+            <div class="summary-line">
+              <span>Subtotal (Taxable):</span>
+              <span id="drawer-subtotal">₹0.00</span>
+            </div>
+            <div class="summary-line">
+              <span id="drawer-tax-label">GST Tax:</span>
+              <span id="drawer-tax-val">₹0.00</span>
+            </div>
+            <div class="summary-line adj-charge" id="drawer-packing-row" style="display: none;">
+              <span>Packing & Handling:</span>
+              <span id="drawer-packing-val">+ ₹0.00</span>
+            </div>
+            <div class="summary-line adj-disc" id="drawer-discount-row" style="display: none;">
+              <span>Discount Applied:</span>
+              <span id="drawer-discount-val">- ₹0.00</span>
+            </div>
+            <div class="summary-line total">
+              <span>Grand Total:</span>
+              <span id="drawer-grand-total" style="color: var(--accent);">₹0.00</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="drawer-footer">
-        <button class="btn-block-action" id="btn-submit-order" onclick="submitOrder()">
-          Confirm & Place Order
-        </button>
+      <div class="drawer-footer" id="cart-drawer-footer">
+        <!-- Phase 1 Footer Actions -->
+        <div id="footer-phase-1" style="display: flex; width: 100%; gap: 10px;">
+          <button type="button" class="btn-drawer-secondary" onclick="closeCartDrawer()" style="flex: 1;">
+            ← Keep Shopping
+          </button>
+          <button type="button" class="btn-block-action" id="btn-next-to-phase2" onclick="switchCheckoutPhase(2)" style="flex: 2;">
+            <span>Next: Charges & Delivery</span> ➔
+          </button>
+        </div>
+
+        <!-- Phase 2 Footer Actions -->
+        <div id="footer-phase-2" style="display: none; width: 100%; gap: 10px;">
+          <button type="button" class="btn-drawer-secondary" onclick="switchCheckoutPhase(1)" style="flex: 1;">
+            ⬅ Back to Items
+          </button>
+          <button type="button" class="btn-block-action" id="btn-submit-order" onclick="submitOrder()" style="flex: 2;">
+            Confirm & Place Order
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1457,79 +2047,248 @@
     </div>
   </div>
 
-  <!-- Edit Order Modal -->
-  <div class="modal-center-overlay" id="edit-order-modal">
-    <div class="modal-card" style="max-width: 440px; text-align: left;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <div class="modal-title" id="edit-modal-title">Edit Order #ORD-XXXX</div>
-        <button class="drawer-close" onclick="closeEditOrderModal()">✕</button>
-      </div>
-      <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 14px;">Modify status, charges, or item quantities:</div>
-
-      <div style="margin-bottom: 12px;">
-        <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Order Status</label>
-        <select id="edit-order-status" style="width: 100%; margin-top: 4px; padding: 8px 12px; background: #0f172a; border: 1px solid var(--card-border); border-radius: 8px; color: #fff;">
-          <option value="placed">Placed</option>
-          <option value="packed">Packed</option>
-          <option value="dispatched">Dispatched</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-      </div>
-
-      <div style="margin-bottom: 12px;">
-        <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Transport Carrier</label>
-        <select id="edit-order-transport" style="width: 100%; margin-top: 4px; padding: 8px 12px; background: #0f172a; border: 1px solid var(--card-border); border-radius: 8px; color: #fff;">
-          <option value="0">Direct / Self Transport</option>
-        </select>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-        <div>
-          <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Packing (₹)</label>
-          <div class="input-with-prefix" style="margin-top: 4px;">
-            <span class="currency-symbol">₹</span>
-            <input type="number" id="edit-order-packing" min="0" step="any" placeholder="0.00">
-          </div>
+  <!-- Edit Order Modal (2-Phase Workflow) -->
+  <div class="drawer-overlay" id="edit-order-modal" onclick="onEditOrderOverlayClick(event)">
+    <div class="drawer-panel" onclick="event.stopPropagation()">
+      <div class="drawer-header" style="flex-direction: column; align-items: stretch; gap: 12px; padding: 16px 20px 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="drawer-title" id="edit-modal-title">✏️ Edit Order #ORD-XXXX</div>
+          <button class="drawer-close" onclick="closeEditOrderModal()">✕</button>
         </div>
-        <div>
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Discount</label>
-            <div class="discount-toggle-pill" style="padding: 1px;">
-              <button type="button" class="disc-toggle-btn active" id="btn-edit-disc-raw" onclick="setEditDiscountMode('raw')" style="font-size: 0.65rem; padding: 2px 6px;">₹</button>
-              <button type="button" class="disc-toggle-btn" id="btn-edit-disc-pct" onclick="setEditDiscountMode('percent')" style="font-size: 0.65rem; padding: 2px 6px;">%</button>
+
+        <!-- 2-Phase Edit Stepper Indicator -->
+        <div class="checkout-stepper-bar">
+          <div class="checkout-step-btn active" id="tab-edit-step-1" onclick="switchEditPhase(1)" title="Go to Phase 1: Review & Negotiate Items">
+            <span class="step-num">1</span>
+            <div class="step-info">
+              <span class="step-label">Phase 1</span>
+              <span class="step-name">Review & Negotiate</span>
             </div>
           </div>
-          <div class="input-with-prefix" style="margin-top: 4px;">
-            <span class="currency-symbol" id="symbol-edit-discount-prefix">₹</span>
-            <input type="number" id="edit-order-discount" min="0" step="any" placeholder="0.00">
+          <div class="checkout-step-arrow">➔</div>
+          <div class="checkout-step-btn" id="tab-edit-step-2" onclick="switchEditPhase(2)" title="Go to Phase 2: Status & Charges">
+            <span class="step-num">2</span>
+            <div class="step-info">
+              <span class="step-label">Phase 2</span>
+              <span class="step-name">Status & Charges</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Edit Order GST Configuration -->
-      <div style="margin-bottom: 12px; background: rgba(15, 23, 42, 0.75); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--card-border);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <label for="edit-order-gst-toggle" style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; cursor: pointer;">Apply GST (Tax Invoice)</label>
-          <label class="switch">
-            <input type="checkbox" id="edit-order-gst-toggle" onchange="onEditGstToggleChanged()">
-            <span class="slider"></span>
-          </label>
+      <div class="drawer-body" id="edit-order-drawer-body">
+        <!-- PHASE 1: Products List & Dual Price/Amount Negotiation -->
+        <div id="edit-phase-1" class="checkout-phase-container">
+          <div class="phase-header-row">
+            <div>
+              <div class="phase-title">📦 Order Products</div>
+              <div class="phase-subtitle">Adjust item quantities, negotiated unit rates, or line totals for this order</div>
+            </div>
+            <button type="button" class="btn-reset-all-pill" id="btn-edit-reset-all-prices" onclick="resetAllEditItemPrices()" style="display: none;">
+              ↺ Reset All Prices
+            </button>
+          </div>
+
+          <!-- Items list container -->
+          <div id="edit-order-items-list" style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Rendered via renderEditOrderItems -->
+          </div>
+
+          <!-- Phase 1 Summary Box -->
+          <div class="phase1-summary-box">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-secondary); font-size: 0.85rem;">Items Count: <b id="edit-phase1-items-count" style="color: #fff;">0 items</b></span>
+              <div style="text-align: right;">
+                <span style="font-size: 0.74rem; color: var(--text-muted); display: block;">Items Subtotal</span>
+                <span id="edit-phase1-subtotal" style="font-size: 1.15rem; font-weight: 800; color: var(--accent);">₹0.00</span>
+              </div>
+            </div>
+            <div id="edit-phase1-savings-row" style="display: none; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255, 255, 255, 0.1); font-size: 0.78rem; color: #4ade80;">
+              <span>⚡ Negotiated Savings for Order:</span>
+              <b id="edit-phase1-savings-amount" style="font-size: 0.85rem;">₹0.00</b>
+            </div>
+          </div>
         </div>
-        <div id="edit-gst-rate-container" style="display: none; margin-top: 8px;">
-          <label style="font-size: 0.72rem; font-weight: 600; color: var(--accent);">GST Rate (%)</label>
-          <div class="input-with-prefix" style="margin-top: 4px;">
-            <span class="currency-symbol">%</span>
-            <input type="number" id="edit-order-gst-rate" min="0" max="100" step="any" placeholder="18">
+
+        <!-- PHASE 2: Status, Transport, Packing, Discount, GST & Note -->
+        <div id="edit-phase-2" class="checkout-phase-container" style="display: none;">
+          <!-- Quick Glance of Items -->
+          <div class="checkout-glance-bar">
+            <div>
+              <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); display: block; font-weight: 700;">Order Items</span>
+              <span id="edit-glance-item-summary" style="font-size: 0.92rem; font-weight: 700; color: #fff;">0 items • ₹0.00</span>
+            </div>
+            <button type="button" class="btn-edit-glance" onclick="switchEditPhase(1)">
+              ✏️ Edit Products / Rates
+            </button>
+          </div>
+
+          <!-- Adjustments & Details Card -->
+          <div class="adjustments-card">
+            <!-- Order Status Selection -->
+            <div class="adj-input-group">
+              <div class="adj-label-row">
+                <label for="edit-order-status">📋 Order Status</label>
+                <span class="adj-pill-hint">Status</span>
+              </div>
+              <select id="edit-order-status" style="width: 100%; background: #090d16; border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: #fff; padding: 9px 12px; font-size: 0.88rem; font-weight: 600; outline: none;">
+                <option value="placed">Placed</option>
+                <option value="packed">Packed</option>
+                <option value="dispatched">Dispatched</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <!-- Transport Selection -->
+            <div class="adj-input-group" style="margin-top: 6px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+              <div class="adj-label-row">
+                <label for="edit-order-transport">🚚 Transport Carrier</label>
+                <span class="adj-pill-hint">Carrier</span>
+              </div>
+              <select id="edit-order-transport" style="width: 100%; background: #090d16; border: 1px solid var(--card-border); border-radius: var(--radius-sm); color: #fff; padding: 9px 12px; font-size: 0.88rem; font-weight: 600; outline: none;">
+                <option value="0">Default (Direct / Self Transport)</option>
+              </select>
+            </div>
+
+            <!-- Order Note -->
+            <div class="adj-input-group" style="margin-top: 6px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+              <div class="adj-label-row">
+                <label for="edit-order-note">📝 Order Note / Instructions</label>
+                <span class="adj-pill-hint">Optional</span>
+              </div>
+              <textarea id="edit-order-note" class="textarea-note" rows="2" placeholder="Order instructions or note..."></textarea>
+            </div>
+
+            <!-- Packing & Discount Grid -->
+            <div class="adjustments-grid" style="margin-top: 6px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+              <!-- Packing Charge -->
+              <div class="adj-input-group">
+                <div class="adj-label-row">
+                  <label for="edit-order-packing">📦 Packing Charge</label>
+                  <span class="adj-pill-hint">+ Extra</span>
+                </div>
+                <div class="input-with-prefix">
+                  <span class="currency-symbol">₹</span>
+                  <input type="number" id="edit-order-packing" min="0" step="any" placeholder="0.00" oninput="onEditFormValuesChanged()">
+                </div>
+              </div>
+
+              <!-- Discount -->
+              <div class="adj-input-group">
+                <div class="adj-label-row">
+                  <label for="edit-order-discount" id="label-edit-discount-title">🏷️ Discount</label>
+                  <div class="discount-toggle-pill" role="group">
+                    <button type="button" class="disc-toggle-btn active" id="btn-edit-disc-raw" onclick="setEditDiscountMode('raw')" title="Raw ₹">
+                      <span class="disc-toggle-icon">₹</span> Raw
+                    </button>
+                    <button type="button" class="disc-toggle-btn" id="btn-edit-disc-pct" onclick="setEditDiscountMode('percent')" title="Percent %">
+                      <span class="disc-toggle-icon">%</span> Percent
+                    </button>
+                  </div>
+                </div>
+                <div class="input-with-prefix">
+                  <span class="currency-symbol" id="symbol-edit-discount-prefix">₹</span>
+                  <input type="number" id="edit-order-discount" min="0" step="any" placeholder="0.00" oninput="onEditFormValuesChanged()">
+                </div>
+              </div>
+            </div>
+
+            <!-- GST Toggle & Rate Input -->
+            <div class="adj-input-group" style="margin-top: 6px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <label for="edit-order-gst-toggle" style="font-weight: 700; font-size: 0.85rem; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    🏛️ Apply GST (Tax Invoice)
+                  </label>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                    Enable to calculate GST on invoice
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="edit-order-gst-toggle" onchange="onEditGstToggleChanged()">
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div id="edit-gst-rate-container" style="display: none; margin-top: 10px; background: rgba(15, 23, 42, 0.75); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--card-border);">
+                <div class="adj-label-row">
+                  <label for="edit-order-gst-rate" style="font-size: 0.78rem; font-weight: 700; color: var(--accent);">GST Rate Percentage (%)</label>
+                  <span class="adj-pill-hint">Rate %</span>
+                </div>
+                <div class="input-with-prefix" style="margin-top: 4px;">
+                  <span class="currency-symbol" style="font-size: 0.8rem; font-weight: 700;">%</span>
+                  <input type="number" id="edit-order-gst-rate" min="0" max="100" step="any" placeholder="18" oninput="onEditFormValuesChanged()">
+                </div>
+              </div>
+            </div>
+
+            <!-- Omit Prices & Amounts Toggle -->
+            <div class="adj-input-group" style="margin-top: 6px; border-top: 1px solid var(--card-border); padding-top: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <label for="edit-order-hide-rate-toggle" style="font-weight: 700; font-size: 0.85rem; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    🚫 Do Not Show Prices & Amounts
+                  </label>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                    Generate document with items & quantities only (prices and totals are omitted)
+                  </div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="edit-order-hide-rate-toggle">
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Edit Order Financial Summary Preview -->
+          <div class="summary-card" id="edit-summary-card">
+            <div class="summary-line">
+              <span>Subtotal (Taxable):</span>
+              <span id="edit-drawer-subtotal">₹0.00</span>
+            </div>
+            <div class="summary-line">
+              <span id="edit-drawer-tax-label">GST Tax:</span>
+              <span id="edit-drawer-tax-val">₹0.00</span>
+            </div>
+            <div class="summary-line adj-charge" id="edit-drawer-packing-row" style="display: none;">
+              <span>Packing & Handling:</span>
+              <span id="edit-drawer-packing-val">+ ₹0.00</span>
+            </div>
+            <div class="summary-line adj-disc" id="edit-drawer-discount-row" style="display: none;">
+              <span>Discount:</span>
+              <span id="edit-drawer-discount-val">- ₹0.00</span>
+            </div>
+            <div class="summary-line total">
+              <span>Updated Total:</span>
+              <span id="edit-drawer-grand-total" style="color: var(--accent);">₹0.00</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div id="edit-order-items-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
-        <!-- Injected via JS -->
-      </div>
+      <div class="drawer-footer" id="edit-drawer-footer">
+        <!-- Phase 1 Footer Actions -->
+        <div id="footer-edit-phase-1" style="display: flex; width: 100%; gap: 10px;">
+          <button type="button" class="btn-drawer-secondary" onclick="closeEditOrderModal()" style="flex: 1;">
+            Cancel
+          </button>
+          <button type="button" class="btn-block-action" id="btn-next-edit-to-phase2" onclick="switchEditPhase(2)" style="flex: 2;">
+            <span>Next: Status & Charges</span> ➔
+          </button>
+        </div>
 
-      <button class="btn-block-action" onclick="saveOrderEdits()">Save Order Changes</button>
+        <!-- Phase 2 Footer Actions -->
+        <div id="footer-edit-phase-2" style="display: none; width: 100%; gap: 10px;">
+          <button type="button" class="btn-drawer-secondary" onclick="switchEditPhase(1)" style="flex: 1;">
+            ⬅ Back to Items
+          </button>
+          <button type="button" class="btn-block-action" onclick="saveOrderEdits()" style="flex: 2;">
+            Save Order Changes
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1546,9 +2305,13 @@
         <div class="summary-line"><span>Customer:</span><span id="modal-cust-name">-</span></div>
         <div class="summary-line" id="modal-packing-row" style="display: none;"><span>Packing Charge:</span><span id="modal-packing" style="color: var(--accent);">+₹0.00</span></div>
         <div class="summary-line" id="modal-discount-row" style="display: none;"><span>Discount:</span><span id="modal-discount" style="color: var(--success);">-₹0.00</span></div>
+        <div class="summary-line" id="modal-note-row" style="display: none;"><span>Order Note:</span><span id="modal-note" style="color: #93c5fd; font-size: 0.8rem; font-weight: 500;">-</span></div>
         <div class="summary-line"><span>Total:</span><strong id="modal-total" style="color: var(--success);">₹0.00</strong></div>
       </div>
-      <a id="modal-pdf-link" href="#" target="_blank" class="btn-block-action" style="text-decoration: none; display: block; margin-bottom: 8px;">
+      <button id="modal-whatsapp-btn" class="btn-block-action btn-whatsapp" onclick="sendWhatsAppInvoiceCurrent()" style="margin-bottom: 10px;">
+        <span style="font-size: 1.15rem;">📲</span> WHATSAPP INVOICE
+      </button>
+      <a id="modal-pdf-link" href="#" target="_blank" class="btn-icon" style="width: 100%; justify-content: center; text-decoration: none; margin-bottom: 8px; border-color: rgba(255, 255, 255, 0.25);">
         📄 Download Tax Invoice PDF
       </a>
       <button class="btn-icon" style="width: 100%; justify-content: center;" onclick="closeSuccessModal()">
@@ -2340,6 +3103,155 @@
       }
     }
 
+    function onNoteChanged() {
+      const noteVal = document.getElementById('input-order-note')?.value?.trim() || '';
+      const noteRow = document.getElementById('drawer-note-row');
+      const noteDisplay = document.getElementById('drawer-note-val');
+      if (noteRow && noteDisplay) {
+        if (noteVal) {
+          noteRow.style.display = 'flex';
+          noteDisplay.innerText = noteVal;
+          noteDisplay.title = noteVal;
+        } else {
+          noteRow.style.display = 'none';
+        }
+      }
+    }
+
+    function addNoteChip(text) {
+      const input = document.getElementById('input-order-note');
+      if (!input) return;
+      const current = input.value.trim();
+      if (current) {
+        if (!current.includes(text)) {
+          input.value = `${current}, ${text}`;
+        }
+      } else {
+        input.value = text;
+      }
+      onNoteChanged();
+    }
+
+    function clearNote() {
+      const input = document.getElementById('input-order-note');
+      if (input) input.value = '';
+      onNoteChanged();
+    }
+
+    function onHideRateToggleChanged() {
+      const isHidden = document.getElementById('toggle-hide-rate-switch')?.checked;
+      const rateRow = document.getElementById('drawer-hide-rate-row');
+      if (rateRow) {
+        rateRow.style.display = isHidden ? 'flex' : 'none';
+      }
+    }
+
+    let lastPlacedOrderData = null;
+
+    function formatWhatsAppPhone(phone) {
+      if (!phone) return '';
+      let clean = String(phone).replace(/\D/g, '');
+      if (clean.length === 10) {
+        clean = '91' + clean;
+      } else if (clean.length === 11 && clean.startsWith('0')) {
+        clean = '91' + clean.slice(1);
+      }
+      return clean;
+    }
+
+    async function sendWhatsAppInvoiceCurrent() {
+      if (!lastPlacedOrderData) {
+        alert("No recent order data available to share.");
+        return;
+      }
+      await executeWhatsAppShare(lastPlacedOrderData);
+    }
+
+    async function shareOrderViaWhatsAppById(orderId) {
+      try {
+        const resp = await fetch(`/api/orders/${orderId}/whatsapp`);
+        const data = await resp.json();
+        if (data.status === 'success') {
+          await executeWhatsAppShare(data);
+        } else {
+          alert("Could not load WhatsApp invoice details: " + (data.message || 'Unknown error'));
+        }
+      } catch (err) {
+        alert("Error fetching WhatsApp details: " + err.message);
+      }
+    }
+
+    async function executeWhatsAppShare(orderInfo) {
+      let phone = orderInfo.whatsapp_phone || orderInfo.phone;
+      if (!phone && orderInfo.customer_phone) {
+        phone = formatWhatsAppPhone(orderInfo.customer_phone);
+      }
+      if (!phone && customerData?.phone) {
+        phone = formatWhatsAppPhone(customerData.phone);
+      }
+
+      if (!phone) {
+        const inputPhone = prompt("Customer phone number is missing. Please enter 10-digit WhatsApp number:", "");
+        if (!inputPhone) return;
+        phone = formatWhatsAppPhone(inputPhone);
+      }
+
+      let pdfUrl = orderInfo.pdf_url || '';
+      if (pdfUrl && !pdfUrl.startsWith('http')) {
+        pdfUrl = `${window.location.origin}${pdfUrl}`;
+      }
+
+      const voucherNo = orderInfo.voucher_no || 'ORDER';
+      const custName = orderInfo.customer_name || customerData?.name || 'Valued Customer';
+      const totalAmount = (orderInfo.total_amount !== undefined && orderInfo.total_amount !== null) ? 
+        `₹${Number(orderInfo.total_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}` : '';
+
+      let text = orderInfo.message_text;
+      if (!text) {
+        const isRateHidden = !!orderInfo.hide_product_rate;
+        const docTitle = isRateHidden ? 'DELIVERY CHALLAN / ESTIMATE' : 'ESTIMATE / INVOICE';
+        let msg = `🧾 *${docTitle}*\n━━━━━━━━━━━━━━━━━━\n📦 *Voucher #:* #${voucherNo}\n👤 *Customer:* ${custName}\n`;
+        if (totalAmount && !isRateHidden) {
+          msg += `💰 *Grand Total:* ${totalAmount}\n`;
+        }
+        if (orderInfo.notes) {
+          msg += `📝 *Note:* ${orderInfo.notes}\n`;
+        }
+        msg += `━━━━━━━━━━━━━━━━━━\n📄 *Download / View PDF:*\n${pdfUrl}\n\n_Thank you for your business!_\n*HINDUSTAN PLAST*`;
+        text = msg;
+      }
+
+      const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+
+      // Attempt native Web Share with file if available (mobile devices / webviews)
+      let sharedViaFile = false;
+      if (navigator.share && navigator.canShare && pdfUrl) {
+        try {
+          const fileResp = await fetch(pdfUrl);
+          const blob = await fileResp.blob();
+          const file = new File([blob], `Invoice_${voucherNo}.pdf`, { type: 'application/pdf' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: `Invoice #${voucherNo} - ${custName}`,
+              text: text
+            });
+            sharedViaFile = true;
+          }
+        } catch (shareErr) {
+          console.log("[WebShare Fallback to wa.me]:", shareErr);
+        }
+      }
+
+      if (!sharedViaFile) {
+        if (window.Telegram?.WebApp?.openLink) {
+          window.Telegram.WebApp.openLink(waUrl);
+        } else {
+          window.open(waUrl, '_blank');
+        }
+      }
+    }
+
     function getGstSettings() {
       const toggle = document.getElementById('toggle-gst-switch');
       const isEnabled = toggle ? toggle.checked : true;
@@ -2400,15 +3312,131 @@
       }, 150);
     }
 
+    const getCartKey = cartKey;
+    let customCartRates = {};
+    let currentCheckoutPhase = 1;
+    let cachedPricingLines = [];
+
+    function switchCheckoutPhase(phase) {
+      const totalCount = Object.values(cartState).reduce((a, b) => a + b, 0);
+      if (phase === 2 && totalCount === 0) {
+        alert("Your cart is empty. Please add items to proceed.");
+        return;
+      }
+      currentCheckoutPhase = phase;
+      updateCheckoutPhaseUI();
+      const body = document.getElementById('cart-drawer-body');
+      if (body) body.scrollTop = 0;
+    }
+
+    function updateCheckoutPhaseUI() {
+      const tab1 = document.getElementById('tab-step-1');
+      const tab2 = document.getElementById('tab-step-2');
+      const phase1 = document.getElementById('checkout-phase-1');
+      const phase2 = document.getElementById('checkout-phase-2');
+      const footer1 = document.getElementById('footer-phase-1');
+      const footer2 = document.getElementById('footer-phase-2');
+      const title = document.getElementById('checkout-modal-title');
+      const nextBtn = document.getElementById('btn-next-to-phase2');
+      const totalCount = Object.values(cartState).reduce((a, b) => a + b, 0);
+
+      if (nextBtn) {
+        nextBtn.disabled = (totalCount === 0);
+      }
+
+      if (currentCheckoutPhase === 1) {
+        if (title) title.innerText = '🛒 Step 1: Review Items & Negotiate Prices';
+        if (tab1) tab1.className = 'checkout-step-btn active';
+        if (tab2) tab2.className = 'checkout-step-btn';
+        if (phase1) phase1.style.display = 'flex';
+        if (phase2) phase2.style.display = 'none';
+        if (footer1) footer1.style.display = 'flex';
+        if (footer2) footer2.style.display = 'none';
+      } else {
+        if (title) title.innerText = '⚡ Step 2: Charges & Place Order';
+        if (tab1) tab1.className = 'checkout-step-btn completed';
+        if (tab2) tab2.className = 'checkout-step-btn active';
+        if (phase1) phase1.style.display = 'none';
+        if (phase2) phase2.style.display = 'flex';
+        if (footer1) footer1.style.display = 'none';
+        if (footer2) footer2.style.display = 'flex';
+      }
+    }
+
+    function onRateInputLive(productId, color, inputElem, qty) {
+      const val = parseFloat(inputElem.value);
+      const card = document.getElementById(`cart-item-${productId}-${color}`);
+      if (card && !isNaN(val) && val >= 0) {
+        const totalInput = card.querySelector('.input-line-total');
+        if (totalInput) {
+          totalInput.value = (val * qty).toFixed(2);
+        }
+      }
+    }
+
+    function onTotalInputLive(productId, color, inputElem, qty) {
+      const val = parseFloat(inputElem.value);
+      const card = document.getElementById(`cart-item-${productId}-${color}`);
+      if (card && !isNaN(val) && val >= 0 && qty > 0) {
+        const rateInput = card.querySelector('.input-unit-rate');
+        if (rateInput) {
+          rateInput.value = (val / qty).toFixed(2);
+        }
+      }
+    }
+
+    function onUnitRateChange(productId, color, newRate, qty) {
+      const key = cartKey(productId, color);
+      const val = parseFloat(newRate);
+      if (!isNaN(val) && val >= 0) {
+        customCartRates[key] = Math.round(val * 100) / 100;
+      } else {
+        delete customCartRates[key];
+      }
+      recalculateCart();
+    }
+
+    function onLineTotalChange(productId, color, newTotal, qty) {
+      const key = cartKey(productId, color);
+      const val = parseFloat(newTotal);
+      if (!isNaN(val) && val >= 0 && qty > 0) {
+        customCartRates[key] = Math.round((val / qty) * 100) / 100;
+      } else {
+        delete customCartRates[key];
+      }
+      recalculateCart();
+    }
+
+    function resetCartCustomRate(productId, color) {
+      const key = cartKey(productId, color);
+      delete customCartRates[key];
+      recalculateCart();
+    }
+
+    function resetAllCartCustomRates() {
+      customCartRates = {};
+      recalculateCart();
+    }
+
+    function removeCartItemCompletely(productId, color) {
+      const key = cartKey(productId, color);
+      delete cartState[key];
+      delete customCartRates[key];
+      renderCatalog();
+      recalculateCart();
+    }
+
     async function recalculateCart() {
       const items = Object.entries(cartState).map(([k, q]) => {
         const { productId, color } = parseCartKey(k);
         const tier = selectedUnitTypes[productId] || 'loose';
+        const customPrice = (customCartRates[k] !== undefined) ? customCartRates[k] : null;
         return {
           product_id: productId,
           quantity: q,
           unit_type: tier,
-          color: color || ''
+          color: color || '',
+          unit_price: customPrice
         };
       }).filter(i => i.quantity > 0);
 
@@ -2417,6 +3445,8 @@
 
       if (items.length === 0) {
         bottomBar.classList.remove('visible');
+        renderCartDrawerLines([]);
+        updateCheckoutPhaseUI();
         return;
       }
 
@@ -2442,6 +3472,7 @@
           })
         });
         const res = await resp.json();
+        cachedPricingLines = res.lines || [];
 
         const taxTotal = (res.cgst_amount || 0) + (res.sgst_amount || 0) + (res.igst_amount || 0);
         const taxType = res.is_intra_state ? 'CGST + SGST' : 'IGST';
@@ -2467,7 +3498,43 @@
           document.getElementById('drawer-tax-val').innerText = `₹${taxTotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
         }
 
-        // Also update Drawer summary
+        // Update Phase 1 Summary
+        const phase1Count = document.getElementById('phase1-items-count');
+        const phase1Subtotal = document.getElementById('phase1-subtotal');
+        const phase1SavingsRow = document.getElementById('phase1-savings-row');
+        const phase1SavingsAmount = document.getElementById('phase1-savings-amount');
+        const btnResetAll = document.getElementById('btn-reset-all-prices');
+
+        if (phase1Count) phase1Count.innerText = `${totalCount} item${totalCount > 1 ? 's' : ''} (${res.lines.length} product${res.lines.length > 1 ? 's' : ''})`;
+        if (phase1Subtotal) phase1Subtotal.innerText = `₹${res.subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+        let totalNegotiatedSavings = 0;
+        res.lines.forEach(l => {
+          if (l.is_custom_rate && l.unit_rate < l.standard_rate) {
+            totalNegotiatedSavings += (l.standard_rate - l.unit_rate) * l.quantity;
+          }
+        });
+
+        if (phase1SavingsRow && phase1SavingsAmount) {
+          if (totalNegotiatedSavings > 0) {
+            phase1SavingsRow.style.display = 'flex';
+            phase1SavingsAmount.innerText = `₹${totalNegotiatedSavings.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+          } else {
+            phase1SavingsRow.style.display = 'none';
+          }
+        }
+
+        if (btnResetAll) {
+          btnResetAll.style.display = Object.keys(customCartRates).length > 0 ? 'inline-flex' : 'none';
+        }
+
+        // Update Phase 2 Glance bar
+        const glanceSummary = document.getElementById('glance-item-summary');
+        if (glanceSummary) {
+          glanceSummary.innerText = `${totalCount} item${totalCount > 1 ? 's' : ''} • ₹${res.subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        }
+
+        // Update Phase 2 Drawer summary
         document.getElementById('drawer-subtotal').innerText = `₹${res.subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
 
         const packingRow = document.getElementById('drawer-packing-row');
@@ -2513,6 +3580,7 @@
         document.getElementById('drawer-grand-total').innerText = `₹${res.total_amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
 
         renderCartDrawerLines(res.lines);
+        updateCheckoutPhaseUI();
       } catch (err) {
         console.error("Pricing Error:", err);
       }
@@ -2520,41 +3588,141 @@
 
     function renderCartDrawerLines(lines) {
       const container = document.getElementById('cart-lines-container');
+      if (!container) return;
+
       if (!lines || lines.length === 0) {
-        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">Your cart is empty.</div>`;
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 36px 18px; background: rgba(15, 23, 42, 0.5); border-radius: 12px; border: 1px dashed var(--card-border);">
+            <div style="font-size: 2.2rem; margin-bottom: 8px;">🛒</div>
+            <div style="font-size: 1rem; font-weight: 700; color: #fff;">Your cart is currently empty</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">Select items from the catalog to review and place an order.</div>
+            <button type="button" class="btn-drawer-secondary" onclick="closeCartDrawer()" style="margin: 16px auto 0; padding: 8px 18px;">
+              Browse Catalog
+            </button>
+          </div>
+        `;
+        const p1Count = document.getElementById('phase1-items-count');
+        const p1Sub = document.getElementById('phase1-subtotal');
+        const p1Sav = document.getElementById('phase1-savings-row');
+        const btnResetAll = document.getElementById('btn-reset-all-prices');
+        if (p1Count) p1Count.innerText = '0 items';
+        if (p1Sub) p1Sub.innerText = '₹0.00';
+        if (p1Sav) p1Sav.style.display = 'none';
+        if (btnResetAll) btnResetAll.style.display = 'none';
         return;
       }
 
       container.innerHTML = lines.map(line => {
         const p = catalogData.find(prod => prod.id === line.product_id) || {};
         const imgSrc = p.photo_url || p.image_url || DEFAULT_IMG;
-        const grpInfo = p.group_alias ? `<span style="color: var(--accent); font-size: 0.72rem; font-weight: 700; margin-right: 4px;">[${p.group_alias}]</span>` : '';
+        const grpInfo = p.group_alias ? `<span class="cart-group-tag">[${p.group_alias}]</span>` : '';
         const color = line.color || '';
         const preset = COLOR_PRESETS[color] || { name: color, bg: '#fff', filter: 'none' };
-        const colorBadge = color ? `<span class="cart-color-tag">🎨 ${color} • ${preset.name || color}</span>` : '';
+        const colorLabel = (preset.name && preset.name.toLowerCase() !== color.toLowerCase()) ? `${color} • ${preset.name}` : color;
+        const colorBadge = color ? `<span class="cart-color-tag">🎨 ${colorLabel}</span>` : '';
         const safeColor = color.replace(/'/g, "\\'");
+        const itemKey = cartKey(line.product_id, color);
+        const hasCustomRate = (customCartRates[itemKey] !== undefined);
+        const standardRate = Number(line.standard_rate || 0);
+        const currentRate = Number(line.unit_rate || 0);
+        const qty = Number(line.quantity || 1);
+        const lineTotal = (currentRate * qty);
+        const diffPerUnit = standardRate - currentRate;
+        const totalSavings = (diffPerUnit * qty);
 
         return `
-          <div class="cart-item-card">
-            <img src="${imgSrc}" class="cart-item-img" style="filter: ${preset.filter || 'none'};" onerror="this.src='${DEFAULT_IMG}'">
-            <div class="cart-item-info">
-              <div class="cart-item-name">${line.name} ${colorBadge}</div>
-              <div class="cart-item-price">${grpInfo}₹${line.unit_rate.toFixed(2)} (${line.unit_type}) × ${line.quantity} = ₹${line.line_total.toFixed(2)}</div>
-            </div>
-            <div class="cart-item-controls">
-              <div class="stepper">
-                <button class="stepper-btn" onclick="updateCartItemQty(${line.product_id}, '${safeColor}', -1)">−</button>
-                <span class="stepper-val">${line.quantity}</span>
-                <button class="stepper-btn" onclick="updateCartItemQty(${line.product_id}, '${safeColor}', 1)">+</button>
+          <div class="cart-negotiate-card ${hasCustomRate ? 'is-custom' : ''}" id="cart-item-${line.product_id}-${color}">
+            <!-- Top Row: Product Info & Steppers -->
+            <div class="cart-card-top-row">
+              <img src="${imgSrc}" class="cart-item-img" style="filter: ${preset.filter || 'none'};" onerror="this.src='${DEFAULT_IMG}'">
+              <div style="flex: 1; min-width: 0;">
+                <div class="cart-item-name">${line.name} ${colorBadge}</div>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; flex-wrap: wrap;">
+                  ${grpInfo}
+                  <span class="unit-type-pill">📦 ${line.unit_type}</span>
+                  <span>• Catalog Price: <b>₹${standardRate.toFixed(2)}</b></span>
+                </div>
+              </div>
+              <!-- Stepper Controls & Delete -->
+              <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                <div class="stepper">
+                  <button type="button" class="stepper-btn" onclick="updateCartItemQty(${line.product_id}, '${safeColor}', -1)">−</button>
+                  <span class="stepper-val">${qty}</span>
+                  <button type="button" class="stepper-btn" onclick="updateCartItemQty(${line.product_id}, '${safeColor}', 1)">+</button>
+                </div>
+                <button type="button" class="btn-remove-item" onclick="removeCartItemCompletely(${line.product_id}, '${safeColor}')" title="Remove item">🗑️</button>
               </div>
             </div>
+
+            <!-- Dual Editable Row: Unit Price & Total Amount + Reset -->
+            <div class="cart-pricing-grid">
+              <!-- Unit Price Input -->
+              <div class="cart-input-field">
+                <div class="cart-input-label">
+                  <span>Unit Price (₹)</span>
+                  ${hasCustomRate ? '<span style="color: #38bdf8; font-weight: 700;">Negotiated</span>' : ''}
+                </div>
+                <div class="cart-input-box ${hasCustomRate ? 'custom-val' : ''}">
+                  <span class="prefix">₹</span>
+                  <input type="number" step="any" min="0" 
+                    class="input-unit-rate"
+                    value="${currentRate}" 
+                    oninput="onRateInputLive(${line.product_id}, '${safeColor}', this, ${qty})"
+                    onchange="onUnitRateChange(${line.product_id}, '${safeColor}', this.value, ${qty})"
+                    title="Edit unit price for this order">
+                </div>
+              </div>
+
+              <!-- Total Amount Input (Unit Price * Quantity) -->
+              <div class="cart-input-field">
+                <div class="cart-input-label">
+                  <span>Total Amount (₹)</span>
+                  <span style="color: var(--text-muted); font-size: 0.65rem;">Rate × ${qty}</span>
+                </div>
+                <div class="cart-input-box ${hasCustomRate ? 'custom-val' : ''}">
+                  <span class="prefix">₹</span>
+                  <input type="number" step="any" min="0" 
+                    class="input-line-total"
+                    value="${lineTotal.toFixed(2)}" 
+                    oninput="onTotalInputLive(${line.product_id}, '${safeColor}', this, ${qty})"
+                    onchange="onLineTotalChange(${line.product_id}, '${safeColor}', this.value, ${qty})"
+                    title="Edit total amount for this product in this order">
+                </div>
+              </div>
+
+              <!-- Reset Button -->
+              <div class="cart-reset-col" style="display: flex; align-items: flex-end;">
+                ${hasCustomRate ? `
+                  <button type="button" class="btn-reset-price-item" onclick="resetCartCustomRate(${line.product_id}, '${safeColor}')" title="Reset to standard catalog rate ₹${standardRate.toFixed(2)}">
+                    ↺ Reset
+                  </button>
+                ` : `
+                  <span class="standard-price-badge">Catalog Price</span>
+                `}
+              </div>
+            </div>
+
+            <!-- Savings / Difference Notice -->
+            ${hasCustomRate ? `
+              <div class="cart-rate-status-row">
+                ${totalSavings > 0 ? `
+                  <span class="badge-saving">🎉 Negotiated: Saves ₹${totalSavings.toFixed(2)} (₹${diffPerUnit.toFixed(2)}/unit off)</span>
+                ` : `
+                  <span class="badge-adjusted">📌 Negotiated Rate: ₹${currentRate.toFixed(2)} (vs catalog ₹${standardRate.toFixed(2)})</span>
+                `}
+                <span style="font-size: 0.7rem; color: var(--text-muted);">For this order only</span>
+              </div>
+            ` : ''}
           </div>
         `;
       }).join('');
     }
 
-    function openCartDrawer() {
+    function openCartDrawer(startPhase = 1) {
+      switchCheckoutPhase(startPhase);
       document.getElementById('cart-drawer').classList.add('active');
+      recalculateCart();
+      onNoteChanged();
     }
     function closeCartDrawer() {
       document.getElementById('cart-drawer').classList.remove('active');
@@ -2569,11 +3737,13 @@
       const items = Object.entries(cartState).map(([k, q]) => {
         const { productId, color } = parseCartKey(k);
         const tier = selectedUnitTypes[productId] || 'loose';
+        const customPrice = (customCartRates[k] !== undefined) ? customCartRates[k] : null;
         return {
           product_id: productId,
           quantity: q,
           unit_type: tier,
-          color: color || ''
+          color: color || '',
+          unit_price: customPrice
         };
       }).filter(i => i.quantity > 0);
 
@@ -2586,6 +3756,8 @@
       const { gstEnabled, gstRate } = getGstSettings();
       const transportVal = document.getElementById('select-order-transport')?.value;
       const transportId = transportVal ? parseInt(transportVal) : null;
+      const orderNote = document.getElementById('input-order-note')?.value?.trim() || '';
+      const hideProductRate = document.getElementById('toggle-hide-rate-switch')?.checked || false;
 
       try {
         const resp = await fetch('/api/cart/submit', {
@@ -2595,6 +3767,8 @@
             customer_id: parseInt(customerId),
             items: items,
             chat_id: chatId ? parseInt(chatId) : null,
+            notes: orderNote,
+            hide_product_rate: hideProductRate,
             packing_charge: packingCharge,
             discount_type: discountType,
             discount_amount: discountAmount,
@@ -2605,11 +3779,18 @@
           })
         });
         const res = await resp.json();
+        lastPlacedOrderData = res;
 
         closeCartDrawer();
+        switchCheckoutPhase(1);
         cartState = {};
+        customCartRates = {};
         if (document.getElementById('input-packing-charge')) document.getElementById('input-packing-charge').value = '';
         if (document.getElementById('input-discount-amount')) document.getElementById('input-discount-amount').value = '';
+        if (document.getElementById('input-order-note')) document.getElementById('input-order-note').value = '';
+        if (document.getElementById('toggle-hide-rate-switch')) document.getElementById('toggle-hide-rate-switch').checked = false;
+        onNoteChanged();
+        onHideRateToggleChanged();
         const badge = document.getElementById('discount-savings-badge');
         if (badge) badge.style.display = 'none';
         renderCatalog();
@@ -2641,9 +3822,23 @@
           }
         }
 
+        const modalNoteRow = document.getElementById('modal-note-row');
+        if (modalNoteRow) {
+          if (res.notes) {
+            modalNoteRow.style.display = 'flex';
+            document.getElementById('modal-note').innerText = res.notes;
+          } else {
+            modalNoteRow.style.display = 'none';
+          }
+        }
+
         const pdfLink = document.getElementById('modal-pdf-link');
         pdfLink.href = res.pdf_url;
-        pdfLink.innerText = (res.gst_enabled === false) ? '📄 Download Invoice PDF' : '📄 Download Tax Invoice PDF';
+        if (res.hide_product_rate) {
+          pdfLink.innerText = '📄 Download PDF (No Prices)';
+        } else {
+          pdfLink.innerText = (res.gst_enabled === false) ? '📄 Download Invoice PDF' : '📄 Download Tax Invoice PDF';
+        }
         document.getElementById('success-modal').classList.add('active');
       } catch (err) {
         alert("Error placing order: " + err.message);
@@ -2678,22 +3873,29 @@
           <div class="order-card-hist">
             <div class="order-hist-header">
               <span class="order-hist-voucher">#${o.voucher_no}</span>
-              <span class="status-badge status-${o.status}">${o.status}</span>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                ${o.hide_product_rate ? `<span style="font-size: 0.7rem; font-weight: 700; color: #fbbf24; background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.35); padding: 2px 7px; border-radius: 999px;">🚫 No Prices Shown</span>` : ''}
+                <span class="status-badge status-${o.status}">${o.status}</span>
+              </div>
             </div>
             <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px;">
               Date: ${o.created_at || 'Recent'} • ${o.item_count} items • 🚚 ${o.transport_name || 'Direct / Self'}
             </div>
+            ${o.notes ? `<div style="font-size: 0.78rem; color: #93c5fd; background: rgba(59, 130, 246, 0.08); border-left: 3px solid var(--accent); padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;">📝 <b>Note:</b> ${o.notes}</div>` : ''}
             <div style="font-size: 0.95rem; font-weight: 700; color: var(--accent); margin-bottom: 10px;">
-              Total: ₹${o.total_amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}
-              ${o.packing_charge > 0 ? `<span style="font-size: 0.75rem; color: var(--text-muted);"> (+₹${o.packing_charge} pack)</span>` : ''}
-              ${o.discount_amount > 0 ? `<span style="font-size: 0.75rem; color: var(--success);"> (-₹${o.discount_amount} off)</span>` : ''}
+              ${o.hide_product_rate ? '<span style="color: #cbd5e1; font-weight: 600; font-size: 0.85rem;">Prices & Amounts Omitted</span>' : `Total: ₹${o.total_amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`}
+              ${(!o.hide_product_rate && o.packing_charge > 0) ? `<span style="font-size: 0.75rem; color: var(--text-muted);"> (+₹${o.packing_charge} pack)</span>` : ''}
+              ${(!o.hide_product_rate && o.discount_amount > 0) ? `<span style="font-size: 0.75rem; color: var(--success);"> (-₹${o.discount_amount} off)</span>` : ''}
             </div>
-            <div style="display: flex; gap: 8px;">
-              <a href="${o.pdf_url}" target="_blank" class="btn-icon" style="flex: 1; justify-content: center; text-decoration: none;">
-                📄 Invoice PDF
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <a href="${o.pdf_url}" target="_blank" class="btn-icon" style="flex: 1; min-width: 95px; justify-content: center; text-decoration: none; font-size: 0.78rem;">
+                📄 View PDF
               </a>
-              <button class="btn-icon" style="flex: 1; justify-content: center; border-color: var(--accent); color: var(--accent);" onclick="openEditOrderModal(${o.id})">
-                ✏️ Edit Order
+              <button class="btn-icon btn-whatsapp-sm" style="flex: 1.3; min-width: 130px; justify-content: center; font-size: 0.78rem;" onclick="shareOrderViaWhatsAppById(${o.id})">
+                📲 WHATSAPP INVOICE
+              </button>
+              <button class="btn-icon" style="flex: 0.8; min-width: 70px; justify-content: center; border-color: var(--accent); color: var(--accent); font-size: 0.78rem;" onclick="openEditOrderModal(${o.id})">
+                ✏️ Edit
               </button>
             </div>
           </div>
@@ -2712,7 +3914,10 @@
       }
     }
 
+    let currentEditPhase = 1;
     let currentEditDiscountMode = 'raw';
+    let currentEditingOrderVoucher = '';
+    let currentEditingOrderCustomerState = '08';
 
     function setEditDiscountMode(mode) {
       currentEditDiscountMode = mode;
@@ -2726,7 +3931,6 @@
         if (prefix) prefix.innerText = '%';
         if (input) {
           input.placeholder = 'e.g. 5 or 10%';
-          input.value = '';
         }
       } else {
         if (pctBtn) pctBtn.classList.remove('active');
@@ -2734,9 +3938,49 @@
         if (prefix) prefix.innerText = '₹';
         if (input) {
           input.placeholder = '0.00';
-          input.value = '';
         }
       }
+      recalculateEditOrderSummary();
+    }
+
+    function switchEditPhase(phase) {
+      currentEditPhase = phase;
+      const tab1 = document.getElementById('tab-edit-step-1');
+      const tab2 = document.getElementById('tab-edit-step-2');
+      const phase1 = document.getElementById('edit-phase-1');
+      const phase2 = document.getElementById('edit-phase-2');
+      const footer1 = document.getElementById('footer-edit-phase-1');
+      const footer2 = document.getElementById('footer-edit-phase-2');
+      const drawerBody = document.getElementById('edit-order-drawer-body');
+
+      if (phase === 1) {
+        if (tab1) { tab1.classList.add('active'); tab1.classList.remove('completed'); }
+        if (tab2) { tab2.classList.remove('active'); }
+        if (phase1) phase1.style.display = 'block';
+        if (phase2) phase2.style.display = 'none';
+        if (footer1) footer1.style.display = 'flex';
+        if (footer2) footer2.style.display = 'none';
+      } else {
+        if (tab1) { tab1.classList.remove('active'); tab1.classList.add('completed'); }
+        if (tab2) { tab2.classList.add('active'); }
+        if (phase1) phase1.style.display = 'none';
+        if (phase2) phase2.style.display = 'block';
+        if (footer1) footer1.style.display = 'none';
+        if (footer2) footer2.style.display = 'flex';
+      }
+
+      if (drawerBody) drawerBody.scrollTop = 0;
+      recalculateEditOrderSummary();
+    }
+
+    function onEditOrderOverlayClick(e) {
+      if (e.target.id === 'edit-order-modal') {
+        closeEditOrderModal();
+      }
+    }
+
+    function onEditFormValuesChanged() {
+      recalculateEditOrderSummary();
     }
 
     async function openEditOrderModal(orderId) {
@@ -2745,14 +3989,27 @@
         const resp = await fetch(`/api/orders/${orderId}`);
         const data = await resp.json();
 
-        document.getElementById('edit-modal-title').innerText = `Edit Order #${data.voucher_no}`;
-        document.getElementById('edit-order-status').value = data.status;
+        currentEditingOrderVoucher = data.voucher_no || `${orderId}`;
+        currentEditingOrderCustomerState = (data.customer && data.customer.state_code) ? data.customer.state_code : '08';
+        document.getElementById('edit-modal-title').innerText = `✏️ Edit Order #${currentEditingOrderVoucher}`;
+        document.getElementById('edit-order-status').value = data.status || 'placed';
+
         if (document.getElementById('edit-order-transport')) {
           document.getElementById('edit-order-transport').value = data.transport_id || 0;
         }
-        document.getElementById('edit-order-packing').value = data.packing_charge ? data.packing_charge.toFixed(2) : '';
-        setEditDiscountMode('raw');
-        document.getElementById('edit-order-discount').value = data.discount_amount ? data.discount_amount.toFixed(2) : '';
+        if (document.getElementById('edit-order-note')) {
+          document.getElementById('edit-order-note').value = data.notes || '';
+        }
+        document.getElementById('edit-order-packing').value = (data.packing_charge && data.packing_charge > 0) ? Number(data.packing_charge).toFixed(2) : '';
+
+        const discType = data.discount_type || 'amount';
+        if (discType === 'percent') {
+          setEditDiscountMode('percent');
+          document.getElementById('edit-order-discount').value = data.discount_percent ? Number(data.discount_percent).toFixed(2) : '';
+        } else {
+          setEditDiscountMode('raw');
+          document.getElementById('edit-order-discount').value = (data.discount_amount && data.discount_amount > 0) ? Number(data.discount_amount).toFixed(2) : '';
+        }
 
         const isGstEnabled = (data.gst_enabled !== false);
         const editGstToggle = document.getElementById('edit-order-gst-toggle');
@@ -2762,16 +4019,37 @@
         const editRateInput = document.getElementById('edit-order-gst-rate');
         if (editRateInput) editRateInput.value = (data.gst_rate !== null && data.gst_rate !== undefined) ? data.gst_rate : '18';
 
-        currentEditingItems = (data.items || []).map(i => ({
-          product_id: i.product_id,
-          name: i.product_name,
-          color: i.color || '',
-          quantity: i.quantity,
-          unit_type: i.unit_type || 'loose',
-          unit_price: i.unit_price
-        }));
+        const editHideRateToggle = document.getElementById('edit-order-hide-rate-toggle');
+        if (editHideRateToggle) editHideRateToggle.checked = !!data.hide_product_rate;
 
+        currentEditingItems = (data.items || []).map(i => {
+          const catProd = catalogData.find(cp => cp.id === i.product_id);
+          const uType = i.unit_type || 'loose';
+          let stdRate = 0;
+          if (catProd) {
+            stdRate = (uType === 'full_carton' || uType === 'carton') ? Number(catProd.full_carton_price || catProd.loose_price || 0) : Number(catProd.loose_price || 0);
+          } else {
+            stdRate = Number(i.unit_price || 0);
+          }
+
+          const photo = i.photo_url || i.image_url || (catProd ? (catProd.photo_url || catProd.image_url) : '') || DEFAULT_IMG;
+
+          return {
+            product_id: i.product_id,
+            name: i.product_name,
+            color: i.color || '',
+            quantity: Number(i.quantity) || 1,
+            unit_type: uType,
+            unit_price: Number(i.unit_price),
+            standard_rate: stdRate,
+            photo_url: photo,
+            group_alias: i.group_alias || (catProd ? catProd.group_alias : '') || ''
+          };
+        });
+
+        switchEditPhase(1);
         renderEditOrderItems();
+        recalculateEditOrderSummary();
         document.getElementById('edit-order-modal').classList.add('active');
       } catch (err) {
         alert("Error loading order for edit: " + err.message);
@@ -2780,22 +4058,181 @@
 
     function renderEditOrderItems() {
       const container = document.getElementById('edit-order-items-list');
+      if (!container) return;
+
+      if (!currentEditingItems || currentEditingItems.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 32px 16px; background: rgba(15, 23, 42, 0.5); border-radius: 12px; border: 1px dashed var(--card-border);">
+            <div style="font-size: 2rem; margin-bottom: 6px;">📦</div>
+            <div style="font-weight: 700; color: #fff;">No items left in this order</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">You can cancel this order or leave it empty.</div>
+          </div>
+        `;
+        recalculateEditOrderSummary();
+        return;
+      }
+
       container.innerHTML = currentEditingItems.map((item, idx) => {
-        const colTag = item.color ? `<span class="cart-color-tag">🎨 ${item.color}</span>` : '';
+        const imgSrc = item.photo_url || DEFAULT_IMG;
+        const color = item.color || '';
+        const preset = COLOR_PRESETS[color] || { name: color, bg: '#fff', filter: 'none' };
+        const colorLabel = (preset.name && preset.name.toLowerCase() !== color.toLowerCase()) ? `${color} • ${preset.name}` : color;
+        const colorBadge = color ? `<span class="cart-color-tag">🎨 ${colorLabel}</span>` : '';
+        const grpInfo = item.group_alias ? `<span class="cart-group-tag">[${item.group_alias}]</span>` : '';
+
+        const currentRate = Number(item.unit_price || 0);
+        const standardRate = Number(item.standard_rate || 0);
+        const qty = Number(item.quantity || 1);
+        const lineTotal = currentRate * qty;
+        const hasCustomRate = (Math.abs(currentRate - standardRate) > 0.009);
+        const diffPerUnit = standardRate - currentRate;
+        const totalSavings = diffPerUnit * qty;
+
         return `
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 8px 10px; border-radius: 8px;">
-          <div>
-            <div style="font-weight: 700; font-size: 0.82rem; color: #fff;">${item.name} ${colTag}</div>
-            <div style="font-size: 0.72rem; color: var(--text-muted);">₹${item.unit_price.toFixed(2)} (${item.unit_type})</div>
+          <div class="cart-negotiate-card ${hasCustomRate ? 'is-custom' : ''}" id="edit-item-card-${idx}">
+            <!-- Top Row: Product Info & Steppers -->
+            <div class="cart-card-top-row">
+              <img src="${imgSrc}" class="cart-item-img" style="filter: ${preset.filter || 'none'};" onerror="this.src='${DEFAULT_IMG}'">
+              <div style="flex: 1; min-width: 0;">
+                <div class="cart-item-name">${item.name} ${colorBadge}</div>
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; flex-wrap: wrap;">
+                  ${grpInfo}
+                  <span class="unit-type-pill">📦 ${item.unit_type}</span>
+                  <span>• Catalog Price: <b>₹${standardRate.toFixed(2)}</b></span>
+                </div>
+              </div>
+              <!-- Stepper Controls & Delete -->
+              <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                <div class="stepper">
+                  <button type="button" class="stepper-btn" onclick="updateEditItemQty(${idx}, -1)">−</button>
+                  <span class="stepper-val">${qty}</span>
+                  <button type="button" class="stepper-btn" onclick="updateEditItemQty(${idx}, 1)">+</button>
+                </div>
+                <button type="button" class="btn-remove-item" onclick="removeEditItem(${idx})" title="Remove item from order">🗑️</button>
+              </div>
+            </div>
+
+            <!-- Dual Editable Row: Unit Price & Total Amount + Reset -->
+            <div class="cart-pricing-grid">
+              <!-- Unit Price Input -->
+              <div class="cart-input-field">
+                <div class="cart-input-label">
+                  <span>Unit Price (₹)</span>
+                  ${hasCustomRate ? '<span style="color: #38bdf8; font-weight: 700;">Negotiated</span>' : ''}
+                </div>
+                <div class="cart-input-box ${hasCustomRate ? 'custom-val' : ''}">
+                  <span class="prefix">₹</span>
+                  <input type="number" step="any" min="0" 
+                    class="input-unit-rate"
+                    value="${currentRate}" 
+                    oninput="onEditRateInputLive(${idx}, this, ${qty})"
+                    onchange="updateEditItemPrice(${idx}, this.value)"
+                    title="Edit unit price for this order">
+                </div>
+              </div>
+
+              <!-- Total Amount Input (Unit Price * Quantity) -->
+              <div class="cart-input-field">
+                <div class="cart-input-label">
+                  <span>Total Amount (₹)</span>
+                  <span style="color: var(--text-muted); font-size: 0.65rem;">Rate × ${qty}</span>
+                </div>
+                <div class="cart-input-box ${hasCustomRate ? 'custom-val' : ''}">
+                  <span class="prefix">₹</span>
+                  <input type="number" step="any" min="0" 
+                    class="input-line-total"
+                    value="${lineTotal.toFixed(2)}" 
+                    oninput="onEditTotalInputLive(${idx}, this, ${qty})"
+                    onchange="updateEditItemTotal(${idx}, this.value, ${qty})"
+                    title="Edit total amount for this product in this order">
+                </div>
+              </div>
+
+              <!-- Reset Button -->
+              <div class="cart-reset-col" style="display: flex; align-items: flex-end;">
+                ${hasCustomRate ? `
+                  <button type="button" class="btn-reset-price-item" onclick="resetEditItemPrice(${idx})" title="Reset to standard catalog rate ₹${standardRate.toFixed(2)}">
+                    ↺ Reset
+                  </button>
+                ` : `
+                  <span class="standard-price-badge">Catalog Price</span>
+                `}
+              </div>
+            </div>
+
+            <!-- Savings / Difference Notice -->
+            ${hasCustomRate ? `
+              <div class="cart-rate-status-row">
+                ${totalSavings > 0 ? `
+                  <span class="badge-saving">🎉 Negotiated: Saves ₹${totalSavings.toFixed(2)} (₹${diffPerUnit.toFixed(2)}/unit off)</span>
+                ` : `
+                  <span class="badge-adjusted">📌 Negotiated Rate: ₹${currentRate.toFixed(2)} (vs catalog ₹${standardRate.toFixed(2)})</span>
+                `}
+                <span style="font-size: 0.7rem; color: var(--text-muted);">For this order only</span>
+              </div>
+            ` : ''}
           </div>
-          <div class="stepper">
-            <button class="stepper-btn" onclick="updateEditItemQty(${idx}, -1)">−</button>
-            <span class="stepper-val">${item.quantity}</span>
-            <button class="stepper-btn" onclick="updateEditItemQty(${idx}, 1)">+</button>
-          </div>
-        </div>
-      `;
+        `;
       }).join('');
+
+      recalculateEditOrderSummary();
+    }
+
+    function onEditRateInputLive(idx, inputElem, qty) {
+      const val = parseFloat(inputElem.value);
+      const card = document.getElementById(`edit-item-card-${idx}`);
+      if (card && !isNaN(val) && val >= 0) {
+        const totalInput = card.querySelector('.input-line-total');
+        if (totalInput) {
+          totalInput.value = (val * qty).toFixed(2);
+        }
+      }
+    }
+
+    function onEditTotalInputLive(idx, inputElem, qty) {
+      const val = parseFloat(inputElem.value);
+      const card = document.getElementById(`edit-item-card-${idx}`);
+      if (card && !isNaN(val) && val >= 0 && qty > 0) {
+        const rateInput = card.querySelector('.input-unit-rate');
+        if (rateInput) {
+          rateInput.value = (val / qty).toFixed(2);
+        }
+      }
+    }
+
+    function updateEditItemPrice(idx, newPrice) {
+      const val = parseFloat(newPrice);
+      if (!isNaN(val) && val >= 0 && currentEditingItems[idx]) {
+        currentEditingItems[idx].unit_price = Math.round(val * 100) / 100;
+      }
+      renderEditOrderItems();
+    }
+
+    function updateEditItemTotal(idx, newTotal, qty) {
+      const val = parseFloat(newTotal);
+      if (!isNaN(val) && val >= 0 && qty > 0 && currentEditingItems[idx]) {
+        currentEditingItems[idx].unit_price = Math.round((val / qty) * 100) / 100;
+      }
+      renderEditOrderItems();
+    }
+
+    function resetEditItemPrice(idx) {
+      if (currentEditingItems[idx]) {
+        currentEditingItems[idx].unit_price = currentEditingItems[idx].standard_rate;
+      }
+      renderEditOrderItems();
+    }
+
+    function resetAllEditItemPrices() {
+      currentEditingItems.forEach(item => {
+        item.unit_price = item.standard_rate;
+      });
+      renderEditOrderItems();
+    }
+
+    function removeEditItem(idx) {
+      currentEditingItems.splice(idx, 1);
+      renderEditOrderItems();
     }
 
     function updateEditItemQty(idx, change) {
@@ -2806,6 +4243,134 @@
         currentEditingItems[idx].quantity = next;
       }
       renderEditOrderItems();
+    }
+
+    function recalculateEditOrderSummary() {
+      let totalQty = 0;
+      let subtotal = 0;
+      let totalSavings = 0;
+      let anyCustomRate = false;
+
+      currentEditingItems.forEach(item => {
+        const q = Number(item.quantity) || 0;
+        const rate = Number(item.unit_price) || 0;
+        const std = Number(item.standard_rate) || 0;
+        totalQty += q;
+        subtotal += (rate * q);
+        if (Math.abs(rate - std) > 0.009) {
+          anyCustomRate = true;
+          if (rate < std) {
+            totalSavings += (std - rate) * q;
+          }
+        }
+      });
+
+      // Update Phase 1 indicators
+      const p1Count = document.getElementById('edit-phase1-items-count');
+      const p1Sub = document.getElementById('edit-phase1-subtotal');
+      const p1SavingsRow = document.getElementById('edit-phase1-savings-row');
+      const p1SavingsAmt = document.getElementById('edit-phase1-savings-amount');
+      const btnResetAll = document.getElementById('btn-edit-reset-all-prices');
+
+      if (p1Count) p1Count.innerText = `${totalQty} item${totalQty > 1 ? 's' : ''} (${currentEditingItems.length} product${currentEditingItems.length > 1 ? 's' : ''})`;
+      if (p1Sub) p1Sub.innerText = `₹${subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+      if (p1SavingsRow && p1SavingsAmt) {
+        if (totalSavings > 0) {
+          p1SavingsRow.style.display = 'flex';
+          p1SavingsAmt.innerText = `₹${totalSavings.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        } else {
+          p1SavingsRow.style.display = 'none';
+        }
+      }
+
+      if (btnResetAll) {
+        btnResetAll.style.display = anyCustomRate ? 'inline-flex' : 'none';
+      }
+
+      // Update Phase 2 Glance bar
+      const glance = document.getElementById('edit-glance-item-summary');
+      if (glance) {
+        glance.innerText = `${totalQty} item${totalQty > 1 ? 's' : ''} • ₹${subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      }
+
+      // Read Phase 2 financial adjustments
+      const packing = parseFloat(document.getElementById('edit-order-packing')?.value) || 0.0;
+      const discountInputVal = parseFloat(document.getElementById('edit-order-discount')?.value) || 0.0;
+      const isPercent = (currentEditDiscountMode === 'percent');
+
+      const editGstToggle = document.getElementById('edit-order-gst-toggle');
+      const isGstChecked = editGstToggle ? editGstToggle.checked : true;
+      const rateInput = document.getElementById('edit-order-gst-rate');
+      const rawRate = rateInput ? rateInput.value.trim() : '';
+      const gstRateVal = (rawRate !== '' && !isNaN(parseFloat(rawRate))) ? parseFloat(rawRate) : 0.0;
+      const gstActive = isGstChecked && rawRate !== '' && gstRateVal > 0;
+
+      // GST calculation
+      const gstTax = gstActive ? (subtotal * (gstRateVal / 100.0)) : 0.0;
+      const grossBeforeDiscount = subtotal + gstTax + packing;
+
+      // Discount calculation
+      let calculatedDiscount = 0.0;
+      if (isPercent) {
+        calculatedDiscount = (grossBeforeDiscount * discountInputVal) / 100.0;
+      } else {
+        calculatedDiscount = discountInputVal;
+      }
+      calculatedDiscount = Math.min(grossBeforeDiscount, Math.max(0.0, calculatedDiscount));
+
+      const updatedGrandTotal = Math.max(0.0, grossBeforeDiscount - calculatedDiscount);
+
+      // Populate Phase 2 Summary Card
+      const editSubtotalElem = document.getElementById('edit-drawer-subtotal');
+      const editTaxLabel = document.getElementById('edit-drawer-tax-label');
+      const editTaxVal = document.getElementById('edit-drawer-tax-val');
+      const editPackRow = document.getElementById('edit-drawer-packing-row');
+      const editPackVal = document.getElementById('edit-drawer-packing-val');
+      const editDiscRow = document.getElementById('edit-drawer-discount-row');
+      const editDiscVal = document.getElementById('edit-drawer-discount-val');
+      const editGrandTotalElem = document.getElementById('edit-drawer-grand-total');
+
+      if (editSubtotalElem) editSubtotalElem.innerText = `₹${subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+      if (editTaxLabel && editTaxVal) {
+        if (gstActive) {
+          const isIntraState = (currentEditingOrderCustomerState === '08');
+          const taxName = isIntraState ? 'CGST + SGST' : 'IGST';
+          editTaxLabel.innerText = `${taxName} (${gstRateVal}%):`;
+          editTaxVal.innerText = `₹${gstTax.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        } else {
+          editTaxLabel.innerText = `GST Tax:`;
+          editTaxVal.innerText = `₹0.00 (Exempt / Off)`;
+        }
+      }
+
+      if (editPackRow && editPackVal) {
+        if (packing > 0) {
+          editPackRow.style.display = 'flex';
+          editPackVal.innerText = `+ ₹${packing.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        } else {
+          editPackRow.style.display = 'none';
+        }
+      }
+
+      if (editDiscRow && editDiscVal) {
+        if (calculatedDiscount > 0) {
+          editDiscRow.style.display = 'flex';
+          const discFmt = calculatedDiscount.toLocaleString('en-IN', {minimumFractionDigits: 2});
+          if (isPercent && discountInputVal > 0) {
+            editDiscVal.innerText = `- ₹${discFmt} (${discountInputVal}%)`;
+          } else {
+            editDiscVal.innerText = `- ₹${discFmt}`;
+          }
+        } else {
+          editDiscRow.style.display = 'none';
+        }
+      }
+
+      if (editGrandTotalElem) {
+        editGrandTotalElem.innerText = `₹${updatedGrandTotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+      }
     }
 
     function closeEditOrderModal() {
@@ -2819,6 +4384,9 @@
       const isEditPercent = (currentEditDiscountMode === 'percent');
       const discountVal = parseFloat(document.getElementById('edit-order-discount')?.value) || 0.0;
       const transportId = parseInt(document.getElementById('edit-order-transport')?.value) || 0;
+      const editNote = document.getElementById('edit-order-note')?.value?.trim() ?? '';
+      const editHideRateToggle = document.getElementById('edit-order-hide-rate-toggle');
+      const editHideRate = editHideRateToggle ? editHideRateToggle.checked : false;
       const editGstToggle = document.getElementById('edit-order-gst-toggle');
       const isToggleChecked = editGstToggle ? editGstToggle.checked : true;
       const editGstRateInput = document.getElementById('edit-order-gst-rate');
@@ -2832,6 +4400,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             status: newStatus,
+            notes: editNote,
+            hide_product_rate: editHideRate,
             packing_charge: packing,
             discount_type: isEditPercent ? 'percent' : 'amount',
             discount_amount: isEditPercent ? 0 : discountVal,
@@ -2839,7 +4409,13 @@
             transport_id: transportId,
             gst_enabled: editGstEnabled,
             gst_rate: editGstRate,
-            items: currentEditingItems.map(i => ({ product_id: i.product_id, quantity: i.quantity, unit_type: i.unit_type, color: i.color || '' }))
+            items: currentEditingItems.map(i => ({
+              product_id: i.product_id,
+              quantity: i.quantity,
+              unit_type: i.unit_type,
+              unit_price: (i.unit_price !== undefined && i.unit_price !== null) ? parseFloat(i.unit_price) : null,
+              color: i.color || ''
+            }))
           })
         });
         const res = await resp.json();

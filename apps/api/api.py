@@ -53,6 +53,7 @@ class CartItemInput(Schema):
     quantity: int
     unit_type: Optional[str] = "loose"
     color: Optional[str] = ""
+    unit_price: Optional[float] = None
 
 class PriceCartInput(Schema):
     customer_id: int
@@ -63,6 +64,7 @@ class PriceCartInput(Schema):
     discount_percent: Optional[float] = None
     gst_enabled: Optional[bool] = True
     gst_rate: Optional[float] = None
+    hide_product_rate: Optional[bool] = False
 
 class SubmitOrderInput(Schema):
     customer_id: int
@@ -76,6 +78,7 @@ class SubmitOrderInput(Schema):
     transport_id: Optional[int] = None
     gst_enabled: Optional[bool] = True
     gst_rate: Optional[float] = None
+    hide_product_rate: Optional[bool] = False
 
 class EditOrderInput(Schema):
     status: Optional[str] = None
@@ -88,6 +91,7 @@ class EditOrderInput(Schema):
     transport_id: Optional[int] = None
     gst_enabled: Optional[bool] = None
     gst_rate: Optional[float] = None
+    hide_product_rate: Optional[bool] = None
 
 def send_telegram_order_notification(chat_id: int, order: Order, action_label: str = "Created"):
     """Helper to send instant Telegram chat notification and PDF invoice document when order is placed or updated."""
@@ -106,6 +110,8 @@ def send_telegram_order_notification(chat_id: int, order: Order, action_label: s
     trans_name = order.transport.name if order.transport else (order.customer.transport.name if order.customer.transport else None)
     if trans_name:
         extra_details += f"\n🚚 <b>Transport:</b> {trans_name}"
+    if getattr(order, 'notes', None) and order.notes.strip():
+        extra_details += f"\n📝 <b>Note:</b> {order.notes.strip()}"
 
     text = (
         f"🎉 <b>Your Order Has Been Successfully {action_label}!</b>\n\n"
@@ -134,6 +140,70 @@ def send_telegram_order_notification(chat_id: int, order: Order, action_label: s
         requests.post(doc_url, data=payload, files=files, timeout=10)
     except Exception as e:
         print(f"[Telegram PDF Send Error]: {e}")
+
+def format_whatsapp_phone(phone: Optional[str]) -> str:
+    """Formats phone number into international digits format (defaulting to 91 for Indian 10-digit mobile numbers)."""
+    if not phone:
+        return ""
+    digits = "".join(ch for ch in str(phone) if ch.isdigit())
+    if len(digits) == 10:
+        return "91" + digits
+    elif len(digits) == 11 and digits.startswith("0"):
+        return "91" + digits[1:]
+    return digits
+
+def generate_whatsapp_invoice_data(order: Order, request=None) -> dict:
+    """Constructs clean WhatsApp invoice text, phone number, and direct wa.me link for an order."""
+    customer = order.customer
+    phone = format_whatsapp_phone(customer.phone if customer else "")
+    
+    if request:
+        pdf_url = request.build_absolute_uri(f"/api/orders/{order.id}/pdf")
+    else:
+        pdf_url = f"http://127.0.0.1:8000/api/orders/{order.id}/pdf"
+        
+    date_str = order.created_at.strftime("%d %b %Y, %I:%M %p") if order.created_at else ""
+    item_count = order.items.count()
+    
+    doc_type = "DELIVERY CHALLAN / ESTIMATE" if order.hide_product_rate else "COMMERCIAL ESTIMATE / INVOICE"
+    
+    lines = [
+        f"🧾 *{doc_type}*",
+        f"━━━━━━━━━━━━━━━━━━",
+        f"📦 *Voucher #:* #{order.voucher_no}",
+        f"👤 *Customer:* {customer.name if customer else 'Customer'}",
+    ]
+    if date_str:
+        lines.append(f"📅 *Date:* {date_str}")
+        
+    lines.append(f"📦 *Total Distinct Items:* {item_count}")
+    
+    if not order.hide_product_rate:
+        lines.append(f"💰 *Grand Total:* ₹{float(order.total_amount):,.2f}")
+    else:
+        total_qty = sum(item.quantity for item in order.items.all())
+        lines.append(f"📦 *Total Quantity:* {total_qty} units (Rates Withheld)")
+        
+    if getattr(order, 'notes', None) and order.notes.strip():
+        lines.append(f"📝 *Note:* {order.notes.strip()}")
+        
+    lines.append(f"━━━━━━━━━━━━━━━━━━")
+    lines.append(f"📄 *Download / View PDF:*")
+    lines.append(pdf_url)
+    lines.append(f"\n_Thank you for your business!_\n*HINDUSTAN PLAST*")
+    
+    message_text = "\n".join(lines)
+    whatsapp_url = f"https://wa.me/{phone}?text={urllib.parse.quote(message_text)}" if phone else ""
+    
+    return {
+        "phone": phone,
+        "raw_phone": customer.phone if customer else "",
+        "customer_name": customer.name if customer else "",
+        "voucher_no": order.voucher_no,
+        "message_text": message_text,
+        "whatsapp_url": whatsapp_url,
+        "pdf_url": pdf_url
+    }
 
 @api.get("/transports", response=List[TransportSchema])
 def list_transports_api(request):
@@ -312,7 +382,13 @@ def price_cart(request, payload: PriceCartInput):
         if qty <= 0:
             continue
         unit_type = item.unit_type or "loose"
-        rate = product.get_price(unit_type)
+        standard_rate = product.get_price(unit_type)
+        if item.unit_price is not None and item.unit_price >= 0:
+            rate = Decimal(str(item.unit_price)).quantize(Decimal("0.01"))
+            is_custom_rate = True
+        else:
+            rate = standard_rate
+            is_custom_rate = False
 
         line_subtotal = rate * Decimal(qty)
         if not gst_enabled:
@@ -347,6 +423,8 @@ def price_cart(request, payload: PriceCartInput):
             "color": item.color or "",
             "quantity": qty,
             "unit_rate": float(rate),
+            "standard_rate": float(standard_rate),
+            "is_custom_rate": is_custom_rate,
             "gst_rate": float(effective_gst_pct),
             "line_subtotal": float(line_subtotal),
             "line_gst": float(line_gst),
@@ -382,6 +460,7 @@ def price_cart(request, payload: PriceCartInput):
         "discount_percent": float(disc_pct) if disc_pct is not None else None,
         "total_amount": float(grand_total),
         "is_intra_state": is_intra_state,
+        "hide_product_rate": bool(payload.hide_product_rate),
         "lines": line_details
     }
 
@@ -423,10 +502,14 @@ def submit_order(request, payload: SubmitOrderInput):
     if not order_transport and customer.transport:
         order_transport = customer.transport
 
+    hide_product_rate = bool(payload.hide_product_rate)
+
     order = Order.objects.create(
         customer=customer,
         transport=order_transport,
         voucher_no=voucher_no,
+        notes=(payload.notes or "").strip(),
+        hide_product_rate=hide_product_rate,
         packing_charge=packing_charge,
         discount_amount=discount_amount,
         gst_enabled=price_res.get("gst_enabled", gst_enabled),
@@ -440,7 +523,10 @@ def submit_order(request, payload: SubmitOrderInput):
             continue
         product = get_object_or_404(Product, id=item.product_id)
         unit_type = item.unit_type or "loose"
-        unit_price = product.get_price(unit_type)
+        if item.unit_price is not None and item.unit_price >= 0:
+            unit_price = Decimal(str(item.unit_price)).quantize(Decimal("0.01"))
+        else:
+            unit_price = product.get_price(unit_type)
         taxable_amt = unit_price * Decimal(item.quantity)
         effective_rate = custom_rate if (custom_rate is not None and gst_enabled) else product.gst_rate
         OrderItem.objects.create(
@@ -470,13 +556,21 @@ def submit_order(request, payload: SubmitOrderInput):
         send_telegram_order_notification(target_chat_id, order, action_label="Created")
 
     pdf_url = f"/api/orders/{order.id}/pdf"
+    wa_data = generate_whatsapp_invoice_data(order, request=request)
 
     return {
         "status": "success",
         "order_id": order.id,
         "voucher_no": order.voucher_no,
+        "notes": order.notes or "",
+        "customer_name": customer.name,
+        "customer_phone": customer.phone or "",
+        "whatsapp_phone": wa_data["phone"],
+        "whatsapp_url": wa_data["whatsapp_url"],
+        "whatsapp_message": wa_data["message_text"],
         "transport_id": order.transport_id,
         "transport_name": order.transport.name if order.transport else "Direct / Self",
+        "hide_product_rate": order.hide_product_rate,
         "gst_enabled": order.gst_enabled,
         "gst_rate": float(order.custom_gst_rate) if order.custom_gst_rate else None,
         "packing_charge": float(order.packing_charge),
@@ -511,14 +605,20 @@ def list_orders(request, customer_id: Optional[int] = None, status: Optional[str
             }
             for item in o.items.all()
         ]
+        wa_data = generate_whatsapp_invoice_data(o, request=request)
         orders_data.append({
             "id": o.id,
             "voucher_no": o.voucher_no,
             "customer_id": o.customer.id,
             "customer_name": o.customer.name,
+            "customer_phone": o.customer.phone or "",
+            "whatsapp_phone": wa_data["phone"],
+            "whatsapp_url": wa_data["whatsapp_url"],
             "customer_location": f"{o.customer.city}, {o.customer.state_code}" if o.customer.city else o.customer.state_code,
+            "notes": o.notes or "",
             "transport_id": o.transport_id,
             "transport_name": o.transport.name if o.transport else (o.customer.transport.name if o.customer.transport else "Self / Direct"),
+            "hide_product_rate": o.hide_product_rate,
             "gst_enabled": o.gst_enabled,
             "gst_rate": float(o.custom_gst_rate) if o.custom_gst_rate else None,
             "status": o.status,
@@ -560,10 +660,12 @@ def get_order_detail(request, order_id: int):
         }
         for item in order.items.all()
     ]
+    wa_data = generate_whatsapp_invoice_data(order, request=request)
     return {
         "status": "success",
         "id": order.id,
         "voucher_no": order.voucher_no,
+        "notes": order.notes or "",
         "customer": {
             "id": order.customer.id,
             "name": order.customer.name,
@@ -571,8 +673,13 @@ def get_order_detail(request, order_id: int):
             "location": f"{order.customer.city}, {order.customer.state_code}" if order.customer.city else order.customer.state_code,
             "phone": order.customer.phone
         },
+        "customer_phone": order.customer.phone or "",
+        "whatsapp_phone": wa_data["phone"],
+        "whatsapp_url": wa_data["whatsapp_url"],
+        "whatsapp_message": wa_data["message_text"],
         "transport_id": order.transport_id,
         "transport_name": order.transport.name if order.transport else (order.customer.transport.name if order.customer.transport else "Self / Direct"),
+        "hide_product_rate": order.hide_product_rate,
         "gst_enabled": order.gst_enabled,
         "gst_rate": float(order.custom_gst_rate) if order.custom_gst_rate else None,
         "status": order.status,
@@ -616,6 +723,14 @@ def edit_order_api(request, order_id: int, payload: EditOrderInput):
             if order.custom_gst_rate <= Decimal("0.00"):
                 order.gst_enabled = False
 
+    if payload.notes is not None:
+        order.notes = payload.notes.strip()
+        order.save(update_fields=["notes"])
+
+    if payload.hide_product_rate is not None:
+        order.hide_product_rate = bool(payload.hide_product_rate)
+        order.save(update_fields=["hide_product_rate"])
+
     if payload.transport_id is not None:
         if payload.transport_id == 0:
             order.transport = None
@@ -630,7 +745,10 @@ def edit_order_api(request, order_id: int, payload: EditOrderInput):
                 continue
             product = get_object_or_404(Product, id=item.product_id)
             unit_type = item.unit_type or "loose"
-            unit_price = product.get_price(unit_type)
+            if item.unit_price is not None and item.unit_price >= 0:
+                unit_price = Decimal(str(item.unit_price)).quantize(Decimal("0.01"))
+            else:
+                unit_price = product.get_price(unit_type)
             taxable_amt = unit_price * Decimal(item.quantity)
             effective_rate = order.custom_gst_rate if (order.custom_gst_rate is not None and order.gst_enabled) else product.gst_rate
 
@@ -669,9 +787,11 @@ def edit_order_api(request, order_id: int, payload: EditOrderInput):
         "status": "success",
         "order_id": order.id,
         "voucher_no": order.voucher_no,
+        "notes": order.notes or "",
         "order_status": order.status,
         "transport_id": order.transport_id,
         "transport_name": order.transport.name if order.transport else "Direct / Self",
+        "hide_product_rate": order.hide_product_rate,
         "gst_enabled": order.gst_enabled,
         "gst_rate": float(order.custom_gst_rate) if order.custom_gst_rate else None,
         "subtotal": float(order.subtotal),
@@ -696,3 +816,15 @@ def download_order_pdf(request, order_id: int):
     response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = f'inline; filename="Invoice_{order.voucher_no}.pdf"'
     return response
+
+@api.get("/orders/{order_id}/whatsapp")
+def get_order_whatsapp_data(request, order_id: int):
+    """Returns WhatsApp message text, customer phone, and direct wa.me link for the order."""
+    order = get_object_or_404(Order.objects.select_related("customer"), id=order_id)
+    wa_data = generate_whatsapp_invoice_data(order, request=request)
+    return {
+        "status": "success",
+        "order_id": order.id,
+        **wa_data
+    }
+

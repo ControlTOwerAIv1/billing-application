@@ -84,7 +84,23 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "voucher_no", "customer", "transport", "gst_enabled", "custom_gst_rate", "subtotal", "packing_charge", "discount_amount", "total_amount", "status", "created_at", "soft_deleted")
-    list_filter = ("status", "gst_enabled", "transport", "soft_deleted")
-    search_fields = ("voucher_no", "customer__name")
+    list_display = ("id", "voucher_no", "customer", "whatsapp_invoice_btn", "notes", "hide_product_rate", "transport", "gst_enabled", "custom_gst_rate", "subtotal", "packing_charge", "discount_amount", "total_amount", "status", "created_at", "soft_deleted")
+    list_filter = ("status", "hide_product_rate", "gst_enabled", "transport", "soft_deleted")
+    search_fields = ("voucher_no", "customer__name", "notes")
+    readonly_fields = ("whatsapp_invoice_btn",)
     inlines = [OrderItemInline]
+
+    def whatsapp_invoice_btn(self, obj):
+        if not obj or not obj.id or not obj.customer:
+            return "-"
+        from apps.api.api import generate_whatsapp_invoice_data
+        wa_data = generate_whatsapp_invoice_data(obj)
+        wa_url = wa_data.get("whatsapp_url", "")
+        if not wa_url:
+            return format_html('<span style="color:#94a3b8; font-size:11px;">No Phone</span>')
+        return format_html(
+            '<a href="{}" target="_blank" style="background: #25D366; color: #fff; padding: 3px 8px; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">'
+            '📲 WhatsApp</a>',
+            wa_url
+        )
+    whatsapp_invoice_btn.short_description = "WhatsApp"

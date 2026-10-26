@@ -142,6 +142,14 @@ def generate_order_pdf_bytes(order) -> bytes:
         alignment=2
     )
 
+    grand_total_style = ParagraphStyle(
+        'GrandTotal',
+        parent=normal_style,
+        fontSize=11,
+        fontName='Helvetica-Bold',
+        textColor=colors.HexColor('#1E293B')
+    )
+
     story = []
 
     # Title & Header with HINDUSTAN PLAST Logo
@@ -162,9 +170,10 @@ def generate_order_pdf_bytes(order) -> bytes:
     custom_rate = getattr(order, 'custom_gst_rate', None)
     has_zero_rate = (custom_rate is not None and custom_rate <= Decimal("0.00"))
 
-    gst_is_active = bool(getattr(order, 'gst_enabled', True)) and (tax_sum > Decimal("0.00")) and (not has_zero_rate)
+    hide_rates = bool(getattr(order, 'hide_product_rate', False))
+    gst_is_active = (not hide_rates) and bool(getattr(order, 'gst_enabled', True)) and (tax_sum > Decimal("0.00")) and (not has_zero_rate)
     inv_title_text = "ESTIMATE"
-    inv_sub_text = "COMMERCIAL ESTIMATE"
+    inv_sub_text = "DELIVERY CHALLAN / ESTIMATE" if hide_rates else "COMMERCIAL ESTIMATE"
 
     if logo_file:
         logo_img = Image(logo_file, width=62, height=62)
@@ -226,6 +235,9 @@ def generate_order_pdf_bytes(order) -> bytes:
     details_header = "<b>Estimate Details:</b>"
     doc_num_label = "<b>Estimate #:</b>"
 
+    order_note = order.notes.strip() if (getattr(order, 'notes', None) and str(order.notes).strip()) else ""
+    note_line = f"<br/><b>Note:</b> {order_note}" if order_note else ""
+
     cust_info = [
         [Paragraph("<b>Billed To:</b>", section_header), Paragraph(details_header, section_header)],
         [
@@ -238,7 +250,8 @@ def generate_order_pdf_bytes(order) -> bytes:
                       f"<b>Date:</b> {created_date}<br/>"
                       f"<b>Transport:</b> {transport_display}<br/>"
                       f"<b>Order Type:</b> {order_type_display}<br/>"
-                      f"<b>Status:</b> {order.status.upper()}", normal_style)
+                      f"<b>Status:</b> {order.status.upper()}"
+                      f"{note_line}", normal_style)
         ]
     ]
 
@@ -252,15 +265,26 @@ def generate_order_pdf_bytes(order) -> bytes:
     story.append(Spacer(1, 15))
 
     # Line Items Table Header (Product Name, Qty, Rate, Amount)
-    items_data = [
-        [
-            Paragraph("#", table_header_center_style),
-            Paragraph("Product Name", table_header_style),
-            Paragraph("Qty", table_header_center_style),
-            Paragraph("Rate (Rs.)", table_header_right_style),
-            Paragraph("Amount (Rs.)", table_header_right_style),
+    if hide_rates:
+        items_data = [
+            [
+                Paragraph("#", table_header_center_style),
+                Paragraph("Product Name & Variant Details", table_header_style),
+                Paragraph("Qty", table_header_center_style),
+            ]
         ]
-    ]
+        col_widths = [30, 410, 80]
+    else:
+        items_data = [
+            [
+                Paragraph("#", table_header_center_style),
+                Paragraph("Product Name", table_header_style),
+                Paragraph("Qty", table_header_center_style),
+                Paragraph("Rate (Rs.)", table_header_right_style),
+                Paragraph("Amount (Rs.)", table_header_right_style),
+            ]
+        ]
+        col_widths = [26, 267, 50, 90, 90]
 
     # Group order items by product
     from collections import OrderedDict
@@ -306,7 +330,8 @@ def generate_order_pdf_bytes(order) -> bytes:
             if rate_str not in rates:
                 rates.append(rate_str)
 
-            group_total += Decimal(str(item.total_amount if item.total_amount is not None else item.taxable_amount or 0))
+            item_taxable = item.taxable_amount if item.taxable_amount is not None else (Decimal(str(item.unit_price)) * Decimal(item.quantity))
+            group_total += Decimal(str(item_taxable))
 
         color_parts = []
         if color_counts:
@@ -339,76 +364,119 @@ def generate_order_pdf_bytes(order) -> bytes:
         else:
             qty_display = str(total_qty)
 
-        items_data.append([
-            Paragraph(str(idx), normal_center_style),
-            description_cell,
-            Paragraph(qty_display, normal_center_style),
-            Paragraph(rates_text, normal_right_style),
-            Paragraph(amount_text, normal_right_style),
-        ])
+        if hide_rates:
+            items_data.append([
+                Paragraph(str(idx), normal_center_style),
+                description_cell,
+                Paragraph(qty_display, normal_center_style),
+            ])
+        else:
+            items_data.append([
+                Paragraph(str(idx), normal_center_style),
+                description_cell,
+                Paragraph(qty_display, normal_center_style),
+                Paragraph(rates_text, normal_right_style),
+                Paragraph(amount_text, normal_right_style),
+            ])
 
-    items_table = Table(items_data, colWidths=[26, 267, 50, 90, 90])
-    items_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E293B')),
-        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
-        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
-        ('ALIGN', (2, 0), (2, -1), 'CENTER'),
-        ('ALIGN', (3, 0), (-1, -1), 'RIGHT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8FAFC')])
-    ]))
+    items_table = Table(items_data, colWidths=col_widths)
+    if hide_rates:
+        items_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E293B')),
+            ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+            ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+            ('ALIGN', (2, 0), (2, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8FAFC')])
+        ]))
+    else:
+        items_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E293B')),
+            ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+            ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+            ('ALIGN', (2, 0), (2, -1), 'CENTER'),
+            ('ALIGN', (3, 0), (-1, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8FAFC')])
+        ]))
     story.append(items_table)
     story.append(Spacer(1, 15))
 
-    # Financial Summary Table
-    is_intra_state = (customer.state_code == "08")
-    
-    subtotal_label = "<b>Subtotal (Taxable Amount):</b>" if gst_is_active else "<b>Subtotal:</b>"
-    totals_data = [
-        [Paragraph(subtotal_label, normal_style), Paragraph(f"Rs. {float(order.subtotal):,.2f}", normal_style)]
-    ]
+    if hide_rates:
+        total_items_count = len(product_groups)
+        total_units_sum = sum(item.quantity for item in order.items.all())
+        qty_summary_data = [
+            [Paragraph("<b>Total Distinct Items:</b>", normal_style), Paragraph(str(total_items_count), normal_style)],
+            [Paragraph("<b>Total Quantity:</b>", normal_style), Paragraph(f"<b>{total_units_sum} units</b>", grand_total_style)],
+        ]
+        totals_table = Table(qty_summary_data, colWidths=[180, 120])
+        totals_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('LINEABOVE', (0, -1), (-1, -1), 1, colors.HexColor('#1E293B')),
+        ]))
+        summary_wrapper = Table([[Paragraph("<font color='#64748B'><i>Note: Product rates and amounts are withheld on this document.</i></font>", normal_style), totals_table]], colWidths=[220, 300])
+        summary_wrapper.setStyle(TableStyle([
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        story.append(summary_wrapper)
+        story.append(Spacer(1, 30))
+    else:
+        # Financial Summary Table
+        is_intra_state = (customer.state_code == "08")
+        
+        subtotal_label = "<b>Subtotal (Taxable Amount):</b>" if gst_is_active else "<b>Subtotal:</b>"
+        totals_data = [
+            [Paragraph(subtotal_label, normal_style), Paragraph(f"Rs. {float(order.subtotal):,.2f}", normal_style)]
+        ]
 
-    if gst_is_active:
-        if is_intra_state:
-            cgst_label = f"<b>CGST ({float(order.custom_gst_rate)/2.0:g}%):</b>" if order.custom_gst_rate else "<b>CGST:</b>"
-            sgst_label = f"<b>SGST ({float(order.custom_gst_rate)/2.0:g}%):</b>" if order.custom_gst_rate else "<b>SGST:</b>"
-            totals_data.append([Paragraph(cgst_label, normal_style), Paragraph(f"Rs. {float(order.cgst_amount):,.2f}", normal_style)])
-            totals_data.append([Paragraph(sgst_label, normal_style), Paragraph(f"Rs. {float(order.sgst_amount):,.2f}", normal_style)])
-        else:
-            igst_label = f"<b>IGST ({float(order.custom_gst_rate):g}%):</b>" if order.custom_gst_rate else "<b>IGST:</b>"
-            totals_data.append([Paragraph(igst_label, normal_style), Paragraph(f"Rs. {float(order.igst_amount):,.2f}", normal_style)])
+        if gst_is_active:
+            if is_intra_state:
+                cgst_label = f"<b>CGST ({float(order.custom_gst_rate)/2.0:g}%):</b>" if order.custom_gst_rate else "<b>CGST:</b>"
+                sgst_label = f"<b>SGST ({float(order.custom_gst_rate)/2.0:g}%):</b>" if order.custom_gst_rate else "<b>SGST:</b>"
+                totals_data.append([Paragraph(cgst_label, normal_style), Paragraph(f"Rs. {float(order.cgst_amount):,.2f}", normal_style)])
+                totals_data.append([Paragraph(sgst_label, normal_style), Paragraph(f"Rs. {float(order.sgst_amount):,.2f}", normal_style)])
+            else:
+                igst_label = f"<b>IGST ({float(order.custom_gst_rate):g}%):</b>" if order.custom_gst_rate else "<b>IGST:</b>"
+                totals_data.append([Paragraph(igst_label, normal_style), Paragraph(f"Rs. {float(order.igst_amount):,.2f}", normal_style)])
 
-    packing = getattr(order, 'packing_charge', Decimal("0.00")) or Decimal("0.00")
-    if packing > Decimal("0.00"):
-        totals_data.append([Paragraph("<b>Packing & Handling:</b>", normal_style), Paragraph(f"+ Rs. {float(packing):,.2f}", normal_style)])
+        packing = getattr(order, 'packing_charge', Decimal("0.00")) or Decimal("0.00")
+        if packing > Decimal("0.00"):
+            totals_data.append([Paragraph("<b>Packing & Handling:</b>", normal_style), Paragraph(f"+ Rs. {float(packing):,.2f}", normal_style)])
 
-    discount = getattr(order, 'discount_amount', Decimal("0.00")) or Decimal("0.00")
-    if discount > Decimal("0.00"):
-        discount_style = ParagraphStyle('DiscountStyle', parent=normal_style, textColor=colors.HexColor('#16A34A'))
-        totals_data.append([Paragraph("<b>Discount:</b>", discount_style), Paragraph(f"- Rs. {float(discount):,.2f}", discount_style)])
+        discount = getattr(order, 'discount_amount', Decimal("0.00")) or Decimal("0.00")
+        if discount > Decimal("0.00"):
+            discount_style = ParagraphStyle('DiscountStyle', parent=normal_style, textColor=colors.HexColor('#16A34A'))
+            totals_data.append([Paragraph("<b>Discount:</b>", discount_style), Paragraph(f"- Rs. {float(discount):,.2f}", discount_style)])
 
-    grand_total_style = ParagraphStyle('GrandTotal', parent=normal_style, fontSize=11, fontName='Helvetica-Bold', textColor=colors.HexColor('#1E293B'))
-    totals_data.append([Paragraph("<b>Grand Total:</b>", grand_total_style), Paragraph(f"<b>Rs. {float(order.total_amount):,.2f}</b>", grand_total_style)])
+        grand_total_style = ParagraphStyle('GrandTotal', parent=normal_style, fontSize=11, fontName='Helvetica-Bold', textColor=colors.HexColor('#1E293B'))
+        totals_data.append([Paragraph("<b>Grand Total:</b>", grand_total_style), Paragraph(f"<b>Rs. {float(order.total_amount):,.2f}</b>", grand_total_style)])
 
-    totals_table = Table(totals_data, colWidths=[200, 100])
-    totals_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('LINEABOVE', (0, -1), (-1, -1), 1, colors.HexColor('#1E293B')),
-    ]))
+        totals_table = Table(totals_data, colWidths=[200, 100])
+        totals_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('LINEABOVE', (0, -1), (-1, -1), 1, colors.HexColor('#1E293B')),
+        ]))
 
-    # Position totals on the right side
-    summary_wrapper = Table([[Paragraph("", normal_style), totals_table]], colWidths=[220, 300])
-    summary_wrapper.setStyle(TableStyle([
-        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-    ]))
-    story.append(summary_wrapper)
-    story.append(Spacer(1, 30))
+        # Position totals on the right side
+        summary_wrapper = Table([[Paragraph("", normal_style), totals_table]], colWidths=[220, 300])
+        summary_wrapper.setStyle(TableStyle([
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ]))
+        story.append(summary_wrapper)
+        story.append(Spacer(1, 30))
 
     # Footer Notes
     story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#CBD5E1'), spaceAfter=10))

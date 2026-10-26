@@ -459,8 +459,8 @@ def tool_search_products(query: str = "", category: str = "", group: str = "") -
     ]
     return {"status": "success", "count": len(products), "products": products}
 
-def tool_create_order(customer_identifier: str, items: list, order_type: str = "sales", tenant_state_code: str = "08", transport: str = "", transport_id: int = 0) -> dict:
-    """Creates a new order with multi-tier pricing, tax calculation, and optional transport assignment."""
+def tool_create_order(customer_identifier: str, items: list, order_type: str = "sales", tenant_state_code: str = "08", transport: str = "", transport_id: int = 0, notes: str = "") -> dict:
+    """Creates a new order with multi-tier pricing, tax calculation, optional transport assignment, and order notes."""
     cust, err = resolve_single_customer(customer_identifier)
     if err:
         return err
@@ -490,6 +490,7 @@ def tool_create_order(customer_identifier: str, items: list, order_type: str = "
         transport=selected_transport,
         voucher_no=voucher_no,
         order_type=o_type,
+        notes=str(notes or "").strip(),
         status=OrderStatus.PLACED
     )
 
@@ -500,7 +501,7 @@ def tool_create_order(customer_identifier: str, items: list, order_type: str = "
             qty = 1
             unit_type = "loose"
         elif isinstance(item, dict):
-            prod_id_or_sku = item.get("product") or item.get("sku") or item.get("product_id") or ""
+            prod_id_or_sku = item.get("product") or item.get("sku") or item.get("product_sku") or item.get("product_id") or ""
             qty_val = item.get("quantity", 1)
             qty = int(qty_val) if str(qty_val).isdigit() else 1
             unit_type = str(item.get("unit_type", "loose")).lower()
@@ -520,7 +521,13 @@ def tool_create_order(customer_identifier: str, items: list, order_type: str = "
             order.delete()
             return {"status": "error", "message": f"Product '{prod_id_or_sku}' not found."}
 
-        unit_price = prod.get_price(unit_type)
+        custom_rate = item.get("unit_price") if isinstance(item, dict) else None
+        if custom_rate is None and isinstance(item, dict):
+            custom_rate = item.get("rate") or item.get("price")
+        if custom_rate is not None and float(custom_rate) >= 0:
+            unit_price = Decimal(str(custom_rate)).quantize(Decimal("0.01"))
+        else:
+            unit_price = prod.get_price(unit_type)
         taxable_amt = unit_price * Decimal(qty)
 
         order_item = OrderItem.objects.create(
@@ -557,11 +564,15 @@ def tool_create_order(customer_identifier: str, items: list, order_type: str = "
     pdf_url = f"/api/orders/{order.id}/pdf"
     customer_loc = f"{cust.city}, {cust.state_code}" if cust.city else f"State {cust.state_code}"
 
+    from apps.api.api import generate_whatsapp_invoice_data
+    wa_data = generate_whatsapp_invoice_data(order)
+
     return {
         "status": "success",
         "voucher_no": order.voucher_no,
         "order_id": order.id,
         "customer": cust.name,
+        "customer_phone": cust.phone or "",
         "customer_location": customer_loc,
         "transport": order.transport.name if order.transport else None,
         "order_type": order.order_type,
@@ -572,6 +583,8 @@ def tool_create_order(customer_identifier: str, items: list, order_type: str = "
         "total_amount": float(order.total_amount),
         "pdf_url": pdf_url,
         "invoice_pdf_download_link": f"http://127.0.0.1:8000{pdf_url}",
+        "whatsapp_url": wa_data.get("whatsapp_url", ""),
+        "whatsapp_invoice_link": wa_data.get("whatsapp_url", ""),
         "credit_warning": credit_warning,
         "items": created_items
     }
@@ -580,9 +593,10 @@ def tool_edit_order(
     order_identifier: str,
     status: str = "",
     items: list = None,
-    tenant_state_code: str = "08"
+    tenant_state_code: str = "08",
+    notes: str = None
 ) -> dict:
-    """Edits an existing order: modifies status, updates line items/quantities, recalculates taxes, and adjusts customer balance."""
+    """Edits an existing order: modifies status, updates notes, updates line items/quantities, recalculates taxes, and adjusts customer balance."""
     order = None
     ident = str(order_identifier).strip().replace("#", "")
     if ident.isdigit():
@@ -596,6 +610,12 @@ def tool_edit_order(
 
     old_total = order.total_amount
     changes = []
+
+    # Update notes if provided
+    if notes is not None:
+        order.notes = str(notes).strip()
+        order.save(update_fields=["notes"])
+        changes.append(f"Order note updated to: '{order.notes}'")
 
     # Update status if provided
     if status:
@@ -625,7 +645,7 @@ def tool_edit_order(
                     qty = 1
                     unit_type = "loose"
                 elif isinstance(item, dict):
-                    prod_id_or_sku = item.get("product") or item.get("sku") or item.get("product_id") or ""
+                    prod_id_or_sku = item.get("product") or item.get("sku") or item.get("product_sku") or item.get("product_id") or ""
                     qty_val = item.get("quantity", 1)
                     qty = int(qty_val) if str(qty_val).isdigit() else 1
                     unit_type = str(item.get("unit_type", "loose")).lower()
@@ -644,7 +664,13 @@ def tool_edit_order(
                 if not prod:
                     return {"status": "error", "message": f"Product '{prod_id_or_sku}' not found while updating order."}
 
-                unit_price = prod.get_price(unit_type)
+                custom_rate = item.get("unit_price") if isinstance(item, dict) else None
+                if custom_rate is None and isinstance(item, dict):
+                    custom_rate = item.get("rate") or item.get("price")
+                if custom_rate is not None and float(custom_rate) >= 0:
+                    unit_price = Decimal(str(custom_rate)).quantize(Decimal("0.01"))
+                else:
+                    unit_price = prod.get_price(unit_type)
                 taxable_amt = unit_price * Decimal(qty)
 
                 order_item = OrderItem.objects.create(
@@ -692,6 +718,9 @@ def tool_edit_order(
         for item in order.items.all()
     ]
 
+    from apps.api.api import generate_whatsapp_invoice_data
+    wa_data = generate_whatsapp_invoice_data(order)
+
     return {
         "status": "success",
         "voucher_no": order.voucher_no,
@@ -709,6 +738,8 @@ def tool_edit_order(
         "customer_new_balance": float(cust.balance_amount),
         "pdf_url": pdf_url,
         "invoice_pdf_download_link": f"http://127.0.0.1:8000{pdf_url}",
+        "whatsapp_url": wa_data.get("whatsapp_url", ""),
+        "customer_phone": cust.phone or "",
         "items": updated_items
     }
 

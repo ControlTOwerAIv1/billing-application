@@ -194,6 +194,8 @@ class Order(SoftDeleteModel):
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     gst_enabled = models.BooleanField(default=True, help_text="Whether GST is applied and shown on the PDF invoice")
     custom_gst_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Custom GST rate percentage applied to the order")
+    hide_product_rate = models.BooleanField(default=False, help_text="Whether to hide product rates and pricing on the PDF estimate/invoice")
+    notes = models.TextField(blank=True, default="", help_text="Special instructions or notes for the order")
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
     def calculate_taxes_and_totals(self, tenant_state_code: str = "08"):
