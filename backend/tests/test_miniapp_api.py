@@ -352,10 +352,10 @@ class TestMiniAppAPI(unittest.TestCase):
         self.assertEqual(format_whatsapp_phone("+91-9876543210"), "919876543210")
         self.assertEqual(format_whatsapp_phone("09876543210"), "919876543210")
 
-        # 2. Test submit_order includes WhatsApp link
+        # 2. Test submit_order includes WhatsApp link & image_url
         submit_payload = {
             "customer_id": self.customer.id,
-            "items": [{"product_id": self.product.id, "quantity": 2}],
+            "items": [{"product_id": self.product.id, "quantity": 2.5}],
             "notes": "WhatsApp Invoice Delivery test",
             "packing_charge": 25.0
         }
@@ -365,9 +365,9 @@ class TestMiniAppAPI(unittest.TestCase):
         self.assertIn("whatsapp_url", data)
         self.assertIn("whatsapp_phone", data)
         self.assertIn("customer_phone", data)
+        self.assertIn("image_url", data)
         self.assertTrue(data["whatsapp_url"].startswith("https://wa.me/"))
         self.assertIn(data["whatsapp_phone"], data["whatsapp_url"])
-        self.assertIn("Invoice", data["whatsapp_url"])
         order_id = data["order_id"]
 
         # 3. Test GET /api/orders/{order_id}/whatsapp endpoint
@@ -377,31 +377,30 @@ class TestMiniAppAPI(unittest.TestCase):
         self.assertEqual(wa_json["status"], "success")
         self.assertEqual(wa_json["voucher_no"], data["voucher_no"])
         self.assertTrue(wa_json["whatsapp_url"].startswith("https://wa.me/"))
-        self.assertIn("HINDUSTAN PLAST", wa_json["message_text"])
-        self.assertIn(f"/api/orders/{order_id}/pdf", wa_json["message_text"])
+        self.assertIn("image_url", wa_json)
+        self.assertEqual(wa_json["message_text"], "") # Text message removed
 
-        # 4. Test GET /api/orders includes WhatsApp URL
+        # 4. Test GET /api/orders/{order_id}/image photo invoice endpoint
+        img_res = self.client.get(f"/api/orders/{order_id}/image")
+        self.assertEqual(img_res.status_code, 200)
+        self.assertEqual(img_res["Content-Type"], "image/png")
+        self.assertGreater(len(img_res.content), 1000)
+
+        # 5. Test GET /api/orders includes WhatsApp URL and image_url
         list_res = self.client.get(f"/api/orders?customer_id={self.customer.id}")
         self.assertEqual(list_res.status_code, 200)
         order_entry = next((o for o in list_res.json()["orders"] if o["id"] == order_id), None)
         self.assertIsNotNone(order_entry)
         self.assertIn("whatsapp_url", order_entry)
+        self.assertIn("image_url", order_entry)
         self.assertTrue(order_entry["whatsapp_url"].startswith("https://wa.me/"))
 
-        # 5. Test GET /api/orders/{order_id} detail includes WhatsApp URL
+        # 6. Test GET /api/orders/{order_id} detail includes WhatsApp URL and image_url
         detail_res = self.client.get(f"/api/orders/{order_id}")
         self.assertEqual(detail_res.status_code, 200)
         self.assertIn("whatsapp_url", detail_res.json())
-
-        # 6. Test with hide_product_rate=True to verify message specifies challan and suppresses amounts
-        order = Order.objects.get(id=order_id)
-        order.hide_product_rate = True
-        order.save()
-        wa_challan = generate_whatsapp_invoice_data(order)
-        self.assertIn("DELIVERY CHALLAN / ESTIMATE", wa_challan["message_text"])
-        self.assertIn("Rates Withheld", wa_challan["message_text"])
-        self.assertNotIn("Grand Total:", wa_challan["message_text"])
-        print(f"[OK] WhatsApp invoice link and endpoint verified: {wa_json['whatsapp_url'][:60]}...")
+        self.assertIn("image_url", detail_res.json())
+        print(f"[OK] WhatsApp photo invoice link and image endpoint verified: {wa_json['image_url'][:60]}...")
 
     def test_11_order_specific_product_rate_change(self):
         # Base product rate is 500.0

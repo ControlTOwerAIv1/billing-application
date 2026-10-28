@@ -173,7 +173,16 @@ def generate_order_pdf_bytes(order) -> bytes:
     hide_rates = bool(getattr(order, 'hide_product_rate', False))
     gst_is_active = (not hide_rates) and bool(getattr(order, 'gst_enabled', True)) and (tax_sum > Decimal("0.00")) and (not has_zero_rate)
     inv_title_text = "ESTIMATE"
-    inv_sub_text = "DELIVERY CHALLAN / ESTIMATE" if hide_rates else "COMMERCIAL ESTIMATE"
+    inv_sub_text = "DELIVERY CHALLAN / ESTIMATE" if hide_rates else ""
+
+    invoice_col = [
+        Paragraph(inv_title_text, invoice_title_right_style),
+    ]
+    if inv_sub_text:
+        invoice_col.extend([
+            Spacer(1, 3),
+            Paragraph(inv_sub_text, invoice_sub_right_style)
+        ])
 
     if logo_file:
         logo_img = Image(logo_file, width=62, height=62)
@@ -183,11 +192,6 @@ def generate_order_pdf_bytes(order) -> bytes:
             Paragraph("Shaping Convenience, Crafting Quality", company_tagline_style),
             Spacer(1, 2),
             Paragraph("Wholesale Distribution & Supply Chain", company_sub_style)
-        ]
-        invoice_col = [
-            Paragraph(inv_title_text, invoice_title_right_style),
-            Spacer(1, 3),
-            Paragraph(inv_sub_text, invoice_sub_right_style)
         ]
         header_table = Table([[logo_img, company_col, invoice_col]], colWidths=[68, 252, 200])
         header_table.setStyle(TableStyle([
@@ -206,10 +210,7 @@ def generate_order_pdf_bytes(order) -> bytes:
                     Paragraph("Shaping Convenience, Crafting Quality", company_tagline_style),
                     Paragraph("Wholesale Distribution & Supply Chain", company_sub_style)
                 ],
-                [
-                    Paragraph(inv_title_text, invoice_title_right_style),
-                    Paragraph(inv_sub_text, invoice_sub_right_style)
-                ]
+                invoice_col
             ]
         ], colWidths=[320, 200])
         header_table.setStyle(TableStyle([
@@ -238,6 +239,12 @@ def generate_order_pdf_bytes(order) -> bytes:
     order_note = order.notes.strip() if (getattr(order, 'notes', None) and str(order.notes).strip()) else ""
     note_line = f"<br/><b>Note:</b> {order_note}" if order_note else ""
 
+    gst_enabled_val = bool(getattr(order, 'gst_enabled', True))
+    if (not gst_enabled_val) or has_zero_rate:
+        gst_display_line = "GST BILL REQUIRED: No"
+    else:
+        gst_display_line = f"GSTIN: {customer.gstin or 'N/A'}"
+
     cust_info = [
         [Paragraph("<b>Billed To:</b>", section_header), Paragraph(details_header, section_header)],
         [
@@ -245,7 +252,7 @@ def generate_order_pdf_bytes(order) -> bytes:
                       f"Business: {customer.business_name or 'N/A'}<br/>"
                       f"Phone: {customer.phone}<br/>"
                       f"State Code: {customer.state_code}<br/>"
-                      f"GSTIN: {customer.gstin or 'N/A'}", normal_style),
+                      f"{gst_display_line}", normal_style),
             Paragraph(f"{doc_num_label} {order.voucher_no}<br/>"
                       f"<b>Date:</b> {created_date}<br/>"
                       f"<b>Transport:</b> {transport_display}<br/>"
@@ -312,36 +319,45 @@ def generate_order_pdf_bytes(order) -> bytes:
         group_total = Decimal("0.00")
 
         for item in group_items:
-            qty = item.quantity
+            qty = float(item.quantity)
             total_qty += qty
             c = (item.color or "").strip()
             if c:
-                color_counts[c] = color_counts.get(c, 0) + qty
+                color_counts[c] = color_counts.get(c, 0.0) + qty
             else:
                 no_color_qty += qty
 
             unit_suffix = ""
             if item.unit_type and item.unit_type in ["full_carton", "carton", "stuffed_full_carton"]:
-                unit_suffix = " /ctn"
+                unit_suffix = " /gross"
             elif item.unit_type and item.unit_type in ["half_carton"]:
-                unit_suffix = " /half-ctn"
+                unit_suffix = " /half-gross"
 
             rate_str = f"{float(item.unit_price):,.2f}{unit_suffix}"
             if rate_str not in rates:
                 rates.append(rate_str)
 
-            item_taxable = item.taxable_amount if item.taxable_amount is not None else (Decimal(str(item.unit_price)) * Decimal(item.quantity))
+            item_taxable = item.taxable_amount if item.taxable_amount is not None else (Decimal(str(item.unit_price)) * Decimal(str(item.quantity)))
             group_total += Decimal(str(item_taxable))
+
+        def fmt_qty(val):
+            try:
+                f = float(val)
+                if f.is_integer():
+                    return str(int(f))
+                return f"{f:g}"
+            except Exception:
+                return str(val)
 
         color_parts = []
         if color_counts:
             for color_name, c_qty in color_counts.items():
-                color_parts.append(f"{color_name}-{c_qty}")
+                color_parts.append(f"{color_name}-{fmt_qty(c_qty)}")
             if no_color_qty > 0:
-                color_parts.append(f"Standard-{no_color_qty}")
+                color_parts.append(f"Standard-{fmt_qty(no_color_qty)}")
             color_text = f"Color: {', '.join(color_parts)}"
         elif no_color_qty > 0:
-            color_text = f"Qty: {no_color_qty}"
+            color_text = f"Qty: {fmt_qty(no_color_qty)}"
         else:
             color_text = ""
 
@@ -358,11 +374,11 @@ def generate_order_pdf_bytes(order) -> bytes:
         is_half_carton = any(item.unit_type == "half_carton" for item in group_items)
 
         if is_carton:
-            qty_display = f"{total_qty} ctn"
+            qty_display = f"{fmt_qty(total_qty)} gross"
         elif is_half_carton:
-            qty_display = f"{total_qty} half-ctn"
+            qty_display = f"{fmt_qty(total_qty)} half-gross"
         else:
-            qty_display = str(total_qty)
+            qty_display = fmt_qty(total_qty)
 
         if hide_rates:
             items_data.append([
@@ -413,7 +429,7 @@ def generate_order_pdf_bytes(order) -> bytes:
         total_units_sum = sum(item.quantity for item in order.items.all())
         qty_summary_data = [
             [Paragraph("<b>Total Distinct Items:</b>", normal_style), Paragraph(str(total_items_count), normal_style)],
-            [Paragraph("<b>Total Quantity:</b>", normal_style), Paragraph(f"<b>{total_units_sum} units</b>", grand_total_style)],
+            [Paragraph("<b>Total Quantity:</b>", normal_style), Paragraph(f"<b>{fmt_qty(total_units_sum)} units</b>", grand_total_style)],
         ]
         totals_table = Table(qty_summary_data, colWidths=[180, 120])
         totals_table.setStyle(TableStyle([
@@ -478,14 +494,39 @@ def generate_order_pdf_bytes(order) -> bytes:
         story.append(summary_wrapper)
         story.append(Spacer(1, 30))
 
-    # Footer Notes
-    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#CBD5E1'), spaceAfter=10))
-    story.append(Paragraph("<b>Terms & Conditions:</b> Goods once sold will not be taken back or exchanged. Payment due as per credit terms.", sub_title_style))
-    story.append(Spacer(1, 4))
-    doc_kind = "estimate"
-    story.append(Paragraph(f"<i>This is a computer-generated {doc_kind} issued by HINDUSTAN PLAST. No signature required. Thank you for your business!</i>", sub_title_style))
-
+    # Terms & Conditions and Computer-generated text removed as instructed
     doc.build(story)
     pdf_bytes = buffer.getvalue()
     buffer.close()
     return pdf_bytes
+
+
+def generate_order_image_bytes(order) -> bytes:
+    """
+    Generates a crisp PNG photo image of the order estimate/invoice using PyMuPDF and PIL.
+    Returns PNG content as bytes.
+    """
+    import pymupdf
+    from PIL import Image as PILImage
+
+    pdf_bytes = generate_order_pdf_bytes(order)
+    doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+
+    if len(doc) == 0:
+        return b""
+    elif len(doc) == 1:
+        pix = doc[0].get_pixmap(dpi=200)
+        return pix.tobytes("png")
+    else:
+        # Multi-page invoice: stitch vertically
+        images = [PILImage.open(io.BytesIO(page.get_pixmap(dpi=200).tobytes("png"))) for page in doc]
+        total_height = sum(img.height for img in images)
+        max_width = max(img.width for img in images)
+        combined = PILImage.new("RGB", (max_width, total_height), (255, 255, 255))
+        y_offset = 0
+        for img in images:
+            combined.paste(img, (0, y_offset))
+            y_offset += img.height
+        out_buf = io.BytesIO()
+        combined.save(out_buf, format="PNG")
+        return out_buf.getvalue()

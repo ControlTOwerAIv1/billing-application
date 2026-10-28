@@ -1672,6 +1672,338 @@
     .status-dispatched { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
     .status-delivered { background: rgba(16, 185, 129, 0.15); color: var(--success); }
     .status-cancelled { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+    /* Top Catalog Controls (Loose / Gross & Carousel / Grid) */
+    .catalog-header-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      background: rgba(15, 23, 42, 0.65);
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--card-border);
+    }
+    .top-tier-toggle-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .tier-switch-label {
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .tier-segmented-control {
+      display: inline-flex;
+      background: #090d16;
+      border-radius: 20px;
+      padding: 3px;
+      gap: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+    }
+    .tier-seg-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 800;
+      padding: 6px 18px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tier-seg-btn:hover {
+      color: #fff;
+    }
+    .tier-seg-btn.active {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.5);
+    }
+
+    .view-segmented-control {
+      display: inline-flex;
+      background: #090d16;
+      border-radius: 20px;
+      padding: 3px;
+      gap: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .view-seg-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .view-seg-btn:hover {
+      color: #fff;
+    }
+    .view-seg-btn.active {
+      background: rgba(255, 255, 255, 0.16);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    /* Product Carousel Slider */
+    .products-carousel-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+      margin: 12px 0;
+    }
+    .carousel-stage-container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      justify-content: center;
+      position: relative;
+      touch-action: pan-y;
+      user-select: none;
+    }
+    .carousel-stage-container .product-card {
+      width: 100%;
+      box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.7);
+      border: 1.5px solid rgba(56, 189, 248, 0.35);
+      animation: carouselSlideFade 0.22s ease-out;
+    }
+    @keyframes carouselSlideFade {
+      from { opacity: 0.35; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .carousel-arrow {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1.5px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .carousel-arrow:hover {
+      background: #38bdf8;
+      color: #0f172a;
+      border-color: #38bdf8;
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+    }
+    .carousel-arrow:active {
+      transform: scale(0.95);
+    }
+    .carousel-footer-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin: 10px 0 20px 0;
+    }
+    .btn-carousel-nav {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 8px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.18s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-carousel-nav:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0f172a;
+    }
+    .carousel-indicator {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 6px 16px;
+      border-radius: 20px;
+    }
+
+    /* Stepper & Decimal Quantity Input in Modal */
+    .pm-color-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .pm-quick-chips {
+      display: flex;
+      gap: 4px;
+    }
+    .pm-chip-btn {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 6px;
+      color: #38bdf8;
+      font-size: 0.66rem;
+      font-weight: 800;
+      padding: 4px 7px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .pm-chip-btn:hover {
+      background: #38bdf8;
+      color: #0f172a;
+    }
+    .pm-color-input {
+      width: 58px;
+      background: transparent;
+      border: none;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #fff;
+      outline: none;
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    .pm-color-input::-webkit-outer-spin-button,
+    .pm-color-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .pm-color-input.has-qty {
+      color: #fbbf24;
+    }
+    .modal-carousel-ctrls {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.75);
+      padding: 4px 6px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(8px);
+    }
+    .modal-nav-arrow {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #94a3b8;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 0;
+    }
+    .modal-nav-arrow svg {
+      transition: transform 0.2s ease, stroke 0.2s ease;
+    }
+    .modal-nav-arrow:hover {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: rgba(56, 189, 248, 0.6);
+      color: #38bdf8;
+      transform: scale(1.08);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+    }
+    .modal-nav-arrow:active {
+      transform: scale(0.92);
+    }
+    .modal-nav-counter {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #38bdf8;
+      padding: 0 6px;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+    .pm-visual-container {
+      position: relative;
+    }
+    .pm-stage-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+      user-select: none;
+      padding: 0;
+    }
+    .pm-stage-nav svg {
+      transition: transform 0.2s ease;
+    }
+    .pm-stage-nav:hover {
+      background: rgba(56, 189, 248, 0.25);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.65);
+      transform: translateY(-50%) scale(1.12);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+    }
+    .pm-stage-nav:active {
+      transform: translateY(-50%) scale(0.94);
+    }
+    .pm-stage-prev {
+      left: 12px;
+    }
+    .pm-stage-prev:hover svg {
+      transform: translateX(-1px);
+    }
+    .pm-stage-next {
+      right: 12px;
+    }
+    .pm-stage-next:hover svg {
+      transform: translateX(1px);
+    }
+    .pm-counter-badge {
+      position: absolute;
+      bottom: 12px;
+      right: 14px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #94a3b8;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      backdrop-filter: blur(6px);
+      z-index: 5;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
   </style>
 </head>
 <body>
@@ -1728,13 +2060,31 @@
     </div>
   </div>
 
-  <!-- Full Catalog Grid View -->
+  <!-- Full Catalog View (Carousel & Grid) -->
   <div class="catalog-container">
-    <div class="section-header">
-      <div class="section-title">📦 Product Catalog</div>
-      <div class="item-counter" id="visible-count">Showing items</div>
+    <div class="section-header" style="flex-direction: column; align-items: stretch; gap: 10px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div class="section-title">📦 Product Catalog</div>
+        <div class="item-counter" id="visible-count">Showing items</div>
+      </div>
+
+      <!-- Top Controls: Loose / Gross Pricing Toggle -->
+      <div class="catalog-header-controls">
+        <div class="top-tier-toggle-wrap">
+          <span class="tier-switch-label">Pricing Mode:</span>
+          <div class="tier-segmented-control" id="global-pricing-switch">
+            <button type="button" id="global-tier-loose" class="tier-seg-btn active" onclick="setGlobalPricingTier('loose')" title="Show Loose / Dozen rates">
+              Loose
+            </button>
+            <button type="button" id="global-tier-gross" class="tier-seg-btn" onclick="setGlobalPricingTier('carton')" title="Show Gross (Carton) bulk rates">
+              Gross
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- Full Grid View of Products Always Displayed -->
     <div class="products-grid" id="products-grid">
       <!-- Injected via JS -->
     </div>
@@ -1745,7 +2095,6 @@
     <div class="bottom-summary">
       <div class="bottom-items-count" id="bottom-items-count">0 items selected</div>
       <div class="bottom-total" id="bottom-total">₹0.00</div>
-      <div class="bottom-gst-note" id="bottom-gst-note">Incl. Tax & Calculations</div>
     </div>
     <button class="btn-checkout" onclick="openCartDrawer()">
       <span>Review & Buy</span> ➔
@@ -1792,13 +2141,6 @@
             <button type="button" class="btn-reset-all-pill" id="btn-reset-all-prices" onclick="resetAllCartCustomRates()" style="display: none;">
               ↺ Reset All Prices
             </button>
-          </div>
-
-          <div class="negotiation-notice-card">
-            <span style="font-size: 1.15rem; line-height: 1;">🤝</span>
-            <div style="font-size: 0.76rem; color: #cbd5e1; line-height: 1.4;">
-              <b>Price Negotiation:</b> Edit <b>Unit Price</b> or <b>Total Amount</b> for any product below. Custom rates apply <i>only to this order</i> without altering catalog master rates.
-            </div>
           </div>
 
           <!-- Product items container -->
@@ -2311,6 +2653,9 @@
       <button id="modal-whatsapp-btn" class="btn-block-action btn-whatsapp" onclick="sendWhatsAppInvoiceCurrent()" style="margin-bottom: 10px;">
         <span style="font-size: 1.15rem;">📲</span> WHATSAPP INVOICE
       </button>
+      <a id="modal-photo-link" href="#" target="_blank" class="btn-icon" style="width: 100%; justify-content: center; text-decoration: none; margin-bottom: 8px; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">
+        🖼️ View / Download Invoice Photo
+      </a>
       <a id="modal-pdf-link" href="#" target="_blank" class="btn-icon" style="width: 100%; justify-content: center; text-decoration: none; margin-bottom: 8px; border-color: rgba(255, 255, 255, 0.25);">
         📄 Download Tax Invoice PDF
       </a>
@@ -2334,33 +2679,38 @@
             <span id="pm-price-tag" class="badge-tag" style="display: none;"></span>
           </div>
         </div>
-        <button class="drawer-close" onclick="closeProductModal()">✕</button>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="modal-carousel-ctrls" role="group" aria-label="Switch Product">
+            <button type="button" class="modal-nav-arrow" id="pm-nav-prev" onclick="navigateModalProduct(-1)" title="Previous Product (Left Arrow)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <span id="pm-nav-counter" class="modal-nav-counter">1 / 635</span>
+            <button type="button" class="modal-nav-arrow" id="pm-nav-next" onclick="navigateModalProduct(1)" title="Next Product (Right Arrow)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+          <button type="button" class="drawer-close" onclick="closeProductModal()">✕</button>
+        </div>
       </div>
 
-      <!-- Main Visual & Live Color Preview -->
-      <div class="pm-visual-container">
+      <!-- Main Visual & Live Color Preview with Carousel Stage Navigation -->
+      <div class="pm-visual-container" id="pm-visual-box">
+        <button type="button" class="pm-stage-nav pm-stage-prev" onclick="navigateModalProduct(-1)" title="Previous Product (Left Arrow)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
         <img id="pm-main-image" src="" class="pm-main-img" alt="Product Preview" />
+        <button type="button" class="pm-stage-nav pm-stage-next" onclick="navigateModalProduct(1)" title="Next Product (Right Arrow)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
         <div class="pm-color-badge" id="pm-active-color-badge">
           <span class="swatch-dot" id="pm-badge-dot"></span>
           <span id="pm-badge-name">Plain</span>
         </div>
+        <div class="pm-counter-badge" id="pm-counter-badge">Product 1 of 635</div>
       </div>
 
       <!-- Multi-Image / Variant Gallery Thumbnails -->
       <div class="pm-thumbnails-container" id="pm-thumbnails-container" style="display: none;"></div>
-
-      <!-- Unit Tier Switcher -->
-      <div class="pm-tier-row">
-        <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap;">Unit Tier:</div>
-        <div class="tier-toggle" style="margin-bottom: 0; flex: 1;">
-          <button class="tier-btn active" id="pm-tier-loose" onclick="setProductModalTier('loose')">
-            Loose (<span id="pm-price-loose">₹0.00</span>)
-          </button>
-          <button class="tier-btn" id="pm-tier-carton" onclick="setProductModalTier('carton')">
-            Carton (<span id="pm-price-carton">₹0.00</span>)
-          </button>
-        </div>
-      </div>
 
       <!-- Color Variant Selection & Quantities -->
       <div class="pm-section-title">
@@ -2443,18 +2793,26 @@
       };
     }
 
+    function formatQty(val) {
+      if (val === null || val === undefined || isNaN(val)) return '0';
+      const num = Number(val);
+      return Number.isInteger(num) ? num.toString() : num.toFixed(2).replace(/\.?0+$/, '');
+    }
+
     function getTotalProductQty(productId) {
-      return Object.entries(cartState)
+      const sum = Object.entries(cartState)
         .filter(([k]) => parseCartKey(k).productId === productId)
-        .reduce((sum, [, q]) => sum + q, 0);
+        .reduce((s, [, q]) => s + (parseFloat(q) || 0), 0);
+      return Math.round(sum * 100) / 100;
     }
 
     function getProductColorQuantities(productId) {
       const res = {};
       Object.entries(cartState).forEach(([k, q]) => {
         const info = parseCartKey(k);
-        if (info.productId === productId && q > 0) {
-          res[info.color] = q;
+        const numQ = parseFloat(q) || 0;
+        if (info.productId === productId && numQ > 0) {
+          res[info.color] = numQ;
         }
       });
       return res;
@@ -2462,12 +2820,24 @@
 
     function updateCartItemQty(productId, color, delta) {
       const key = cartKey(productId, color);
-      const current = cartState[key] || 0;
-      const next = Math.max(0, current + delta);
+      const current = parseFloat(cartState[key]) || 0;
+      const next = Math.max(0, Math.round((current + delta) * 100) / 100);
       if (next === 0) {
         delete cartState[key];
       } else {
         cartState[key] = next;
+      }
+      renderCatalog();
+      recalculateCart();
+    }
+
+    function setCartItemDirectQty(productId, color, val) {
+      const key = cartKey(productId, color);
+      const num = parseFloat(val);
+      if (isNaN(num) || num <= 0) {
+        delete cartState[key];
+      } else {
+        cartState[key] = Math.round(num * 100) / 100;
       }
       renderCatalog();
       recalculateCart();
@@ -2497,6 +2867,9 @@
 
         // Render Transport Dropdowns
         populateTransportDropdowns();
+
+        // Initialize Carousel Touch Gestures & Keyboard
+        initCarouselGestures();
 
         // Render Categories
         renderCategories(data.categories);
@@ -2579,13 +2952,72 @@
       `;
     }
 
-    function filterCategory(cat) {
-      activeCategory = cat;
-      document.querySelectorAll('.category-pill').forEach(btn => btn.classList.remove('active'));
-      const activeBtn = document.getElementById('cat-btn-' + safeCatId(cat));
-      if (activeBtn) activeBtn.classList.add('active');
+    let globalPricingTier = 'loose'; // 'loose' | 'carton' (Gross)
+
+    function setGlobalPricingTier(tier) {
+      globalPricingTier = tier;
+      const looseBtn = document.getElementById('global-tier-loose');
+      const grossBtn = document.getElementById('global-tier-gross');
+      if (tier === 'carton') {
+        if (grossBtn) grossBtn.classList.add('active');
+        if (looseBtn) looseBtn.classList.remove('active');
+      } else {
+        if (looseBtn) looseBtn.classList.add('active');
+        if (grossBtn) grossBtn.classList.remove('active');
+      }
+
+      if (catalogData && catalogData.length > 0) {
+        catalogData.forEach(p => {
+          const qty = getTotalProductQty(p.id);
+          if (qty === 0) {
+            selectedUnitTypes[p.id] = tier;
+          }
+        });
+      }
+
+      // If modal is currently open, refresh it to reflect the new global pricing mode
+      if (activeModalProductId) {
+        modalSelectedTier = tier;
+        const p = catalogData.find(prod => prod.id === activeModalProductId);
+        if (p) {
+          const colorList = (p.color_list && p.color_list.length > 0) ? p.color_list : ['Standard'];
+          renderModalColorsList(colorList, p);
+          updateModalFooterTotals(p);
+        }
+      }
+
       renderCatalog();
     }
+
+    function getFilteredProducts() {
+      const query = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
+      let filtered = catalogData || [];
+
+      if (activeCategory !== 'ALL') {
+        filtered = filtered.filter(p => p.category === activeCategory || p.group_alias === activeCategory || p.category_alias === activeCategory);
+      }
+      if (query) {
+        filtered = filtered.filter(p =>
+          p.name.toLowerCase().includes(query) ||
+          p.sku.toLowerCase().includes(query) ||
+          (p.colors && p.colors.toLowerCase().includes(query)) ||
+          (p.group_alias && p.group_alias.toLowerCase().includes(query)) ||
+          (p.category_alias && p.category_alias.toLowerCase().includes(query)) ||
+          (p.category && p.category.toLowerCase().includes(query))
+        );
+      }
+      return filtered;
+    }
+
+    function navigateModalProduct(delta) {
+      const filtered = getFilteredProducts();
+      if (!filtered || filtered.length === 0) return;
+      let idx = filtered.findIndex(p => p.id === activeModalProductId);
+      if (idx === -1) idx = 0;
+      const nextIdx = (idx + delta + filtered.length) % filtered.length;
+      openProductModal(filtered[nextIdx].id);
+    }
+
 
     let activeModalProductId = null;
     let modalQuantities = {}; // color -> qty
@@ -2597,7 +3029,19 @@
       if (!p) return;
 
       activeModalProductId = productId;
-      modalSelectedTier = selectedUnitTypes[productId] || 'loose';
+      modalSelectedTier = globalPricingTier || 'loose';
+
+      // Update Carousel Navigation Counter in Modal Header & Stage
+      const filtered = getFilteredProducts();
+      const currentIdx = filtered.findIndex(prod => prod.id === productId);
+      const totalCount = filtered.length;
+      const displayIndex = currentIdx !== -1 ? currentIdx + 1 : 1;
+
+      const navCounter = document.getElementById('pm-nav-counter');
+      if (navCounter) navCounter.innerText = `${displayIndex} / ${totalCount}`;
+
+      const stageCounter = document.getElementById('pm-counter-badge');
+      if (stageCounter) stageCounter.innerText = `Product ${displayIndex} of ${totalCount}`;
 
       document.getElementById('pm-name').innerText = p.name;
       document.getElementById('pm-sku').innerText = p.sku;
@@ -2619,12 +3063,6 @@
           priceTag.style.display = 'none';
         }
       }
-
-      const looseBtn = document.getElementById('pm-tier-loose');
-      const cartonBtn = document.getElementById('pm-tier-carton');
-      if (looseBtn) looseBtn.innerHTML = `${isComb ? 'Loose (Dozen)' : 'Loose'} (<span id="pm-price-loose">₹${p.loose_price.toFixed(2)}</span>)`;
-      if (cartonBtn) cartonBtn.innerHTML = `${isComb ? 'Carton (1 Gross / 12 Dzn)' : 'Carton'} (<span id="pm-price-carton">₹${p.full_carton_price.toFixed(2)}</span>)`;
-      updateProductModalTierButtons();
 
       const imgSrc = p.photo_url || p.image_url || DEFAULT_IMG;
       const mainImg = document.getElementById('pm-main-image');
@@ -2652,11 +3090,11 @@
 
       const colorList = (p.color_list && p.color_list.length > 0) ? p.color_list : ['Standard'];
 
-      const orderedColors = Object.keys(modalQuantities).filter(c => modalQuantities[c] > 0);
+      const orderedColors = Object.keys(modalQuantities).filter(c => (parseFloat(modalQuantities[c]) || 0) > 0);
       activePreviewColor = preselectColor || (orderedColors.length > 0 ? orderedColors[0] : colorList[0]);
 
       // If product has 0 quantity in cart currently, default the selected color variant to quantity 1
-      const currentTotalQty = Object.values(modalQuantities).reduce((a, b) => a + b, 0);
+      const currentTotalQty = Object.values(modalQuantities).reduce((a, b) => a + (parseFloat(b) || 0), 0);
       if (currentTotalQty === 0 && activePreviewColor) {
         modalQuantities[activePreviewColor] = 1;
       }
@@ -2682,7 +3120,6 @@
         if (activeThumb) activeThumb.classList.add('active');
       }
 
-      // If clicked thumbnail maps to a specific color variant, synchronize the color badge & selection
       const p = catalogData.find(prod => prod.id === activeModalProductId);
       if (p && p.color_images) {
         for (const [col, colUrl] of Object.entries(p.color_images)) {
@@ -2715,25 +3152,6 @@
       }
     }
 
-    function setProductModalTier(tier) {
-      modalSelectedTier = tier;
-      selectedUnitTypes[activeModalProductId] = tier;
-      updateProductModalTierButtons();
-      const p = catalogData.find(prod => prod.id === activeModalProductId);
-      if (p) updateModalFooterTotals(p);
-    }
-
-    function updateProductModalTierButtons() {
-      const looseBtn = document.getElementById('pm-tier-loose');
-      const cartonBtn = document.getElementById('pm-tier-carton');
-      if (modalSelectedTier === 'carton') {
-        cartonBtn.classList.add('active');
-        looseBtn.classList.remove('active');
-      } else {
-        looseBtn.classList.add('active');
-        cartonBtn.classList.remove('active');
-      }
-    }
 
     function selectModalColor(color) {
       activePreviewColor = color;
@@ -2744,19 +3162,15 @@
       if (mainImg && p) {
         let targetImg = null;
 
-        // If an authentic photograph exists for this color variant, show it!
         if (p.color_images && p.color_images[color]) {
           targetImg = p.color_images[color];
         } else if (p.color_images && Object.keys(p.color_images).length > 0) {
-          // Specific variant photos exist (like Audi FL & BKDC), but NOT for this selected color
           targetImg = NO_IMAGE_AVAILABLE;
         } else {
-          // No color-specific photo mapping defined
           const colorList = p.color_list || [];
           if (colorList.length <= 1 || color === colorList[0]) {
             targetImg = p.photo_url || p.image_url || NO_IMAGE_AVAILABLE;
           } else {
-            // Selected a variant that does not have an authentic photo
             targetImg = NO_IMAGE_AVAILABLE;
           }
         }
@@ -2764,7 +3178,6 @@
         mainImg.src = targetImg;
         mainImg.style.filter = 'none';
 
-        // Update active thumbnail highlight
         document.querySelectorAll('.pm-thumb-item').forEach(el => el.classList.remove('active'));
         if (targetImg !== NO_IMAGE_AVAILABLE && p.all_images) {
           const idx = p.all_images.indexOf(targetImg);
@@ -2793,9 +3206,11 @@
 
     function renderModalColorsList(colorList, p) {
       const container = document.getElementById('pm-colors-container');
+      const isGross = (modalSelectedTier === 'carton');
       container.innerHTML = colorList.map(c => {
         const preset = COLOR_PRESETS[c] || { name: c, hex: '#cbd5e1', bg: 'linear-gradient(135deg, #f1f5f9, #94a3b8)' };
         const q = modalQuantities[c] || 0;
+        const displayVal = q > 0 ? q : '';
         return `
           <div class="pm-color-row ${activePreviewColor === c ? 'active' : ''}" id="pm-row-${c}" onclick="selectModalColor('${c}')">
             <div class="pm-color-left">
@@ -2806,25 +3221,66 @@
               </div>
             </div>
             <div class="pm-color-stepper" onclick="event.stopPropagation()">
-              <button onclick="updateModalColorQty('${c}', -1)">−</button>
-              <span class="pm-color-val ${q > 0 ? 'has-qty' : ''}" id="pm-qty-${c}">${q}</span>
-              <button onclick="updateModalColorQty('${c}', 1)">+</button>
+              <button type="button" onclick="updateModalColorQty('${c}', -1)">−</button>
+              <input type="number" step="any" min="0" class="pm-color-input ${q > 0 ? 'has-qty' : ''}" id="pm-qty-${c}" 
+                     value="${displayVal}" placeholder="0" 
+                     oninput="setModalColorQtyInput('${c}', this.value)" />
+              <button type="button" onclick="updateModalColorQty('${c}', 1)">+</button>
             </div>
+            ${isGross ? `
+              <div class="pm-quick-chips" onclick="event.stopPropagation()">
+                <button type="button" class="pm-chip-btn" onclick="addModalColorDecimal('${c}', 0.25)">+0.25</button>
+                <button type="button" class="pm-chip-btn" onclick="addModalColorDecimal('${c}', 0.50)">+0.50</button>
+                <button type="button" class="pm-chip-btn" onclick="addModalColorDecimal('${c}', 0.75)">+0.75</button>
+                <button type="button" class="pm-chip-btn" onclick="addModalColorDecimal('${c}', 1.00)">+1</button>
+              </div>
+            ` : ''}
           </div>
         `;
       }).join('');
     }
 
+    function setModalColorQtyInput(color, val) {
+      const num = parseFloat(val);
+      if (isNaN(num) || num <= 0) {
+        modalQuantities[color] = 0;
+      } else {
+        modalQuantities[color] = Math.round(num * 100) / 100;
+      }
+      const inputEl = document.getElementById('pm-qty-' + color);
+      if (inputEl) {
+        if (modalQuantities[color] > 0) inputEl.classList.add('has-qty');
+        else inputEl.classList.remove('has-qty');
+      }
+      const p = catalogData.find(prod => prod.id === activeModalProductId);
+      if (p) updateModalFooterTotals(p);
+    }
+
+    function addModalColorDecimal(color, delta) {
+      const cur = parseFloat(modalQuantities[color]) || 0;
+      const next = Math.max(0, Math.round((cur + delta) * 100) / 100);
+      modalQuantities[color] = next;
+      const inputEl = document.getElementById('pm-qty-' + color);
+      if (inputEl) {
+        inputEl.value = next > 0 ? next : '';
+        if (next > 0) inputEl.classList.add('has-qty');
+        else inputEl.classList.remove('has-qty');
+      }
+      selectModalColor(color);
+      const p = catalogData.find(prod => prod.id === activeModalProductId);
+      if (p) updateModalFooterTotals(p);
+    }
+
     function updateModalColorQty(color, delta) {
-      const cur = modalQuantities[color] || 0;
-      const next = Math.max(0, cur + delta);
+      const cur = parseFloat(modalQuantities[color]) || 0;
+      const next = Math.max(0, Math.round((cur + delta) * 100) / 100);
       modalQuantities[color] = next;
 
-      const qtyEl = document.getElementById('pm-qty-' + color);
-      if (qtyEl) {
-        qtyEl.innerText = next;
-        if (next > 0) qtyEl.classList.add('has-qty');
-        else qtyEl.classList.remove('has-qty');
+      const inputEl = document.getElementById('pm-qty-' + color);
+      if (inputEl) {
+        inputEl.value = next > 0 ? next : '';
+        if (next > 0) inputEl.classList.add('has-qty');
+        else inputEl.classList.remove('has-qty');
       }
 
       selectModalColor(color);
@@ -2834,13 +3290,14 @@
     }
 
     function updateModalFooterTotals(p) {
-      const totalQty = Object.values(modalQuantities).reduce((a, b) => a + b, 0);
-      const activeColorsCount = Object.values(modalQuantities).filter(q => q > 0).length;
+      const totalQty = Math.round(Object.values(modalQuantities).reduce((a, b) => a + (parseFloat(b) || 0), 0) * 100) / 100;
+      const activeColorsCount = Object.values(modalQuantities).filter(q => (parseFloat(q) || 0) > 0).length;
       const unitPrice = modalSelectedTier === 'carton' ? p.full_carton_price : p.loose_price;
       const totalPrice = totalQty * unitPrice;
       const isComb = p.group_alias === 'SOLAR COMB' || p.full_carton_quantity === 12;
-      const unitName = isComb ? (modalSelectedTier === 'carton' ? 'Carton (Gross)' : 'Dozen') : (modalSelectedTier === 'carton' ? 'Carton' : 'pc');
-      const unitTypeLabel = modalSelectedTier === 'carton' ? 'carton(s)' : (isComb ? 'dozen(s)' : 'pc(s)');
+      const unitName = isComb ? (modalSelectedTier === 'carton' ? 'Gross' : 'Dozen') : (modalSelectedTier === 'carton' ? 'Gross' : 'pc');
+      const unitTypeLabel = modalSelectedTier === 'carton' ? 'gross' : (isComb ? 'dozen(s)' : 'pc(s)');
+      const formattedTotal = formatQty(totalQty);
 
       // Update rate badge in modal header
       const activePriceBadge = document.getElementById('pm-active-price');
@@ -2856,10 +3313,11 @@
       const existingCartQty = getTotalProductQty(p.id);
 
       if (totalQty > 0) {
-        if (countEl) countEl.innerText = `${totalQty} ${unitTypeLabel} selected (${activeColorsCount} color${activeColorsCount > 1 ? 's' : ''})`;
-        if (footerQtyEl) footerQtyEl.innerText = `${totalQty} ${unitTypeLabel} total (${modalSelectedTier})`;
+        const tierName = modalSelectedTier === 'carton' ? 'Gross' : 'Loose';
+        if (countEl) countEl.innerText = `${formattedTotal} ${unitTypeLabel} selected (${activeColorsCount} color${activeColorsCount > 1 ? 's' : ''})`;
+        if (footerQtyEl) footerQtyEl.innerText = `${formattedTotal} ${unitTypeLabel} total (${tierName})`;
         if (footerPriceEl) footerPriceEl.innerText = `₹${totalPrice.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-        if (btnSubmit) btnSubmit.innerText = existingCartQty > 0 ? `🛒 Update Cart (${totalQty} ${unitTypeLabel})` : `🛒 Add to Cart (${totalQty} ${unitTypeLabel})`;
+        if (btnSubmit) btnSubmit.innerText = existingCartQty > 0 ? `🛒 Update Cart (${formattedTotal} ${unitTypeLabel})` : `🛒 Add to Cart (${formattedTotal} ${unitTypeLabel})`;
       } else {
         if (countEl) countEl.innerText = `0 ${unitTypeLabel} selected`;
         if (footerQtyEl) footerQtyEl.innerText = `Unit Rate: ₹${unitPrice.toFixed(2)} / ${unitName}`;
@@ -2878,8 +3336,9 @@
       });
 
       Object.entries(modalQuantities).forEach(([col, q]) => {
-        if (q > 0) {
-          cartState[cartKey(activeModalProductId, col)] = q;
+        const numQ = parseFloat(q) || 0;
+        if (numQ > 0) {
+          cartState[cartKey(activeModalProductId, col)] = Math.round(numQ * 100) / 100;
         }
       });
 
@@ -2889,127 +3348,106 @@
       recalculateCart();
     }
 
-    function setProductTier(productId, tier) {
-      selectedUnitTypes[productId] = tier;
+    function renderProductCard(p, isCarouselView = false) {
+      const tier = globalPricingTier;
+      const totalQty = getTotalProductQty(p.id);
+      const colorQtys = getProductColorQuantities(p.id);
+      const orderedColorsCount = Object.keys(colorQtys).filter(c => colorQtys[c] > 0).length;
+
+      const isComb = p.group_alias === 'SOLAR COMB' || p.full_carton_quantity === 12;
+      const currentPrice = tier === 'carton' ? p.full_carton_price : p.loose_price;
+      const unitLabel = tier === 'carton' 
+        ? (isComb ? `1 Gross (${p.full_carton_quantity} dzn)` : `1 Gross (${p.full_carton_quantity} pcs)`) 
+        : (isComb ? 'per Dozen (12 pcs)' : 'per loose pc');
+      const imgSrc = p.photo_url || p.image_url || DEFAULT_IMG;
+      const groupLabel = p.group_alias || p.category || 'Product';
+      const subcatLabel = p.category_alias;
+      const stockQty = p.closing_qty || 0;
+      const opQty = p.opening_qty || 0;
+      const colorList = p.color_list || [];
+      const formattedTotal = formatQty(totalQty);
+
+      return `
+        <div class="product-card ${isCarouselView ? 'carousel-card' : ''}" onclick="openProductModal(${p.id})">
+          <div class="product-thumb-wrap">
+            <img src="${imgSrc}" class="product-img" alt="${p.name}" onerror="this.src='${DEFAULT_IMG}'">
+            <div class="product-category-tag" title="Group: ${groupLabel}">${groupLabel}</div>
+            ${subcatLabel ? `<div class="product-subcat-tag" title="Category: ${subcatLabel}">${subcatLabel}</div>` : ''}
+          </div>
+
+          <div class="product-body">
+            <div class="product-meta-row">
+              <span class="product-sku" title="${p.sku}">${p.sku}</span>
+              <span class="product-stock ${stockQty > 0 ? 'in-stock' : 'out-stock'}">
+                ${stockQty > 0 ? `📦 ${stockQty.toLocaleString()} in stock` : '0 in stock'}
+              </span>
+            </div>
+            <div class="product-name" title="${p.name}">${p.name}</div>
+            ${opQty > 0 ? `<div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 6px;">Opening: ${opQty.toLocaleString()}</div>` : ''}
+
+            <!-- Color Variants Chips -->
+            ${colorList.length > 0 ? `
+              <div class="color-variants-container">
+                <div class="color-variants-label">
+                  <span>🎨 Available Colors:</span>
+                  <span style="color: #fbbf24; font-weight: 800;">${colorList.length} options</span>
+                </div>
+                <div class="color-chips-scroll">
+                  ${colorList.map(c => `
+                    <button type="button" class="color-chip" onclick="event.stopPropagation(); openProductModal(${p.id}, '${c}')">
+                      ${c}
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            <div class="product-pricing">
+              <div>
+                <div class="price-main">
+                  ₹${currentPrice.toLocaleString('en-IN', {minimumFractionDigits: 2})}
+                  ${(p.loose_price === 1.00 && p.full_carton_price === 1.00) ? '<span style="font-size: 0.65rem; color: #f87171; background: rgba(239,68,68,0.18); border: 1px solid rgba(239,68,68,0.4); padding: 1px 6px; border-radius: 4px; margin-left: 5px; font-weight: 700; vertical-align: middle;">Not in PDF</span>' : ''}
+                </div>
+                <div class="price-unit-desc">${(p.loose_price === 1.00 && p.full_carton_price === 1.00) ? 'Default rate (not in PDF)' : unitLabel}</div>
+              </div>
+            </div>
+
+            <div class="action-container" onclick="event.stopPropagation()">
+              ${totalQty > 0 ? `
+                <button type="button" class="btn-card-in-cart" onclick="openProductModal(${p.id})">
+                  <span>✏️</span> ${formattedTotal} in Cart (${orderedColorsCount > 0 ? orderedColorsCount + ' colors' : '1 item'})
+                </button>
+              ` : `
+                <button type="button" class="btn-card-choose" onclick="openProductModal(${p.id})">
+                  <span>🎨</span> View Colors & Order
+                </button>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function filterCategory(cat) {
+      activeCategory = cat;
+      document.querySelectorAll('.category-pill').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = document.getElementById('cat-btn-' + safeCatId(cat));
+      if (activeBtn) activeBtn.classList.add('active');
       renderCatalog();
-      recalculateCart();
     }
 
     function renderCatalog() {
-      const query = document.getElementById('search-input').value.trim().toLowerCase();
-      let filtered = catalogData;
-
-      if (activeCategory !== 'ALL') {
-        filtered = filtered.filter(p => p.category === activeCategory || p.group_alias === activeCategory || p.category_alias === activeCategory);
-      }
-      if (query) {
-        filtered = filtered.filter(p =>
-          p.name.toLowerCase().includes(query) ||
-          p.sku.toLowerCase().includes(query) ||
-          (p.colors && p.colors.toLowerCase().includes(query)) ||
-          (p.group_alias && p.group_alias.toLowerCase().includes(query)) ||
-          (p.category_alias && p.category_alias.toLowerCase().includes(query)) ||
-          (p.category && p.category.toLowerCase().includes(query))
-        );
-      }
-
-      document.getElementById('visible-count').innerText = `${filtered.length} products`;
+      const filtered = getFilteredProducts();
+      const countEl = document.getElementById('visible-count');
+      if (countEl) countEl.innerText = `${filtered.length} products`;
       const grid = document.getElementById('products-grid');
+      if (!grid) return;
 
       if (filtered.length === 0) {
         grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 40px;">No products found matching your search.</div>`;
-        return;
+      } else {
+        grid.innerHTML = filtered.map(p => renderProductCard(p, false)).join('');
       }
-
-      grid.innerHTML = filtered.map(p => {
-        const tier = selectedUnitTypes[p.id] || 'loose';
-        const totalQty = getTotalProductQty(p.id);
-        const colorQtys = getProductColorQuantities(p.id);
-        const orderedColorsCount = Object.keys(colorQtys).filter(c => colorQtys[c] > 0).length;
-
-        const isComb = p.group_alias === 'SOLAR COMB' || p.full_carton_quantity === 12;
-        const currentPrice = tier === 'carton' ? p.full_carton_price : p.loose_price;
-        const unitLabel = tier === 'carton' 
-          ? (isComb ? `1 Carton (1 Gross / ${p.full_carton_quantity} dzn)` : `1 Carton (${p.full_carton_quantity} pcs)`) 
-          : (isComb ? 'per Dozen (12 pcs)' : 'per loose pc');
-        const imgSrc = p.photo_url || p.image_url || DEFAULT_IMG;
-        const groupLabel = p.group_alias || p.category || 'Product';
-        const subcatLabel = p.category_alias;
-        const stockQty = p.closing_qty || 0;
-        const opQty = p.opening_qty || 0;
-        const colorList = p.color_list || [];
-
-        return `
-          <div class="product-card" onclick="openProductModal(${p.id})">
-            <div class="product-thumb-wrap">
-              <img src="${imgSrc}" class="product-img" alt="${p.name}" onerror="this.src='${DEFAULT_IMG}'">
-              <div class="product-category-tag" title="Group: ${groupLabel}">${groupLabel}</div>
-              ${subcatLabel ? `<div class="product-subcat-tag" title="Category: ${subcatLabel}">${subcatLabel}</div>` : ''}
-              <div class="gst-tag">GST ${p.gst_rate}%</div>
-            </div>
-
-            <div class="product-body">
-              <div class="product-meta-row">
-                <span class="product-sku" title="${p.sku}">${p.sku}</span>
-                <span class="product-stock ${stockQty > 0 ? 'in-stock' : 'out-stock'}">
-                  ${stockQty > 0 ? `📦 ${stockQty.toLocaleString()} in stock` : '0 in stock'}
-                </span>
-              </div>
-              <div class="product-name" title="${p.name}">${p.name}</div>
-              ${opQty > 0 ? `<div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 6px;">Opening: ${opQty.toLocaleString()}</div>` : ''}
-
-              <!-- Color Variants Chips -->
-              ${colorList.length > 0 ? `
-                <div class="color-variants-container">
-                  <div class="color-variants-label">
-                    <span>🎨 Available Colors:</span>
-                    <span style="color: #fbbf24; font-weight: 800;">${colorList.length} options</span>
-                  </div>
-                  <div class="color-chips-scroll">
-                    ${colorList.map(c => `
-                      <button class="color-chip" onclick="event.stopPropagation(); openProductModal(${p.id}, '${c}')">
-                        ${c}
-                      </button>
-                    `).join('')}
-                  </div>
-                </div>
-              ` : ''}
-
-              <!-- Multi-tier Selector -->
-              <div class="tier-toggle" onclick="event.stopPropagation()">
-                <button class="tier-btn ${tier === 'loose' ? 'active' : ''}" onclick="setProductTier(${p.id}, 'loose')">
-                  ${isComb ? 'Loose (Dzn)' : 'Loose'}
-                </button>
-                <button class="tier-btn ${tier === 'carton' ? 'active' : ''}" onclick="setProductTier(${p.id}, 'carton')">
-                  ${isComb ? 'Carton (Gross)' : `Carton (${p.full_carton_quantity}x)`}
-                </button>
-              </div>
-
-              <div class="product-pricing">
-                <div>
-                  <div class="price-main">
-                    ₹${currentPrice.toLocaleString('en-IN', {minimumFractionDigits: 2})}
-                    ${(p.loose_price === 1.00 && p.full_carton_price === 1.00) ? '<span style="font-size: 0.65rem; color: #f87171; background: rgba(239,68,68,0.18); border: 1px solid rgba(239,68,68,0.4); padding: 1px 6px; border-radius: 4px; margin-left: 5px; font-weight: 700; vertical-align: middle;">Not in PDF</span>' : ''}
-                  </div>
-                  <div class="price-unit-desc">${(p.loose_price === 1.00 && p.full_carton_price === 1.00) ? 'Default rate (not in PDF)' : unitLabel}</div>
-                </div>
-              </div>
-
-              <div class="action-container" onclick="event.stopPropagation()">
-                ${totalQty > 0 ? `
-                  <button class="btn-card-in-cart" onclick="openProductModal(${p.id})">
-                    <span>✏️</span> ${totalQty} in Cart (${orderedColorsCount > 0 ? orderedColorsCount + ' colors' : '1 item'})
-                  </button>
-                ` : `
-                  <button class="btn-card-choose" onclick="openProductModal(${p.id})">
-                    <span>🎨</span> View Colors & Order
-                  </button>
-                `}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
     }
 
     let currentDiscountMode = 'raw'; // 'raw' (amount in ₹) or 'percent' (% of total order)
@@ -3196,50 +3634,32 @@
         phone = formatWhatsAppPhone(inputPhone);
       }
 
-      let pdfUrl = orderInfo.pdf_url || '';
-      if (pdfUrl && !pdfUrl.startsWith('http')) {
-        pdfUrl = `${window.location.origin}${pdfUrl}`;
+      const imageUrl = orderInfo.image_url || (orderInfo.order_id ? `/api/orders/${orderInfo.order_id}/image` : '');
+      let fullImageUrl = imageUrl;
+      if (fullImageUrl && !fullImageUrl.startsWith('http')) {
+        fullImageUrl = `${window.location.origin}${fullImageUrl}`;
       }
 
       const voucherNo = orderInfo.voucher_no || 'ORDER';
-      const custName = orderInfo.customer_name || customerData?.name || 'Valued Customer';
-      const totalAmount = (orderInfo.total_amount !== undefined && orderInfo.total_amount !== null) ? 
-        `₹${Number(orderInfo.total_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}` : '';
+      const waUrl = `https://wa.me/${phone}`;
 
-      let text = orderInfo.message_text;
-      if (!text) {
-        const isRateHidden = !!orderInfo.hide_product_rate;
-        const docTitle = isRateHidden ? 'DELIVERY CHALLAN / ESTIMATE' : 'ESTIMATE / INVOICE';
-        let msg = `🧾 *${docTitle}*\n━━━━━━━━━━━━━━━━━━\n📦 *Voucher #:* #${voucherNo}\n👤 *Customer:* ${custName}\n`;
-        if (totalAmount && !isRateHidden) {
-          msg += `💰 *Grand Total:* ${totalAmount}\n`;
-        }
-        if (orderInfo.notes) {
-          msg += `📝 *Note:* ${orderInfo.notes}\n`;
-        }
-        msg += `━━━━━━━━━━━━━━━━━━\n📄 *Download / View PDF:*\n${pdfUrl}\n\n_Thank you for your business!_\n*HINDUSTAN PLAST*`;
-        text = msg;
-      }
-
-      const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-
-      // Attempt native Web Share with file if available (mobile devices / webviews)
+      // User requested:
+      // 1. Text message sent along with invoice in WhatsApp is REMOVED.
+      // 2. Invoice is sent as a PHOTO (PNG image), NOT a PDF.
       let sharedViaFile = false;
-      if (navigator.share && navigator.canShare && pdfUrl) {
+      if (navigator.share && navigator.canShare && fullImageUrl) {
         try {
-          const fileResp = await fetch(pdfUrl);
+          const fileResp = await fetch(fullImageUrl);
           const blob = await fileResp.blob();
-          const file = new File([blob], `Invoice_${voucherNo}.pdf`, { type: 'application/pdf' });
+          const file = new File([blob], `Invoice_${voucherNo}.png`, { type: 'image/png' });
           if (navigator.canShare({ files: [file] })) {
             await navigator.share({
-              files: [file],
-              title: `Invoice #${voucherNo} - ${custName}`,
-              text: text
+              files: [file]
             });
             sharedViaFile = true;
           }
         } catch (shareErr) {
-          console.log("[WebShare Fallback to wa.me]:", shareErr);
+          console.log("[WebShare Image Fallback]:", shareErr);
         }
       }
 
@@ -3248,6 +3668,11 @@
           window.Telegram.WebApp.openLink(waUrl);
         } else {
           window.open(waUrl, '_blank');
+        }
+        if (fullImageUrl) {
+          setTimeout(() => {
+            window.open(fullImageUrl, '_blank');
+          }, 350);
         }
       }
     }
@@ -3429,11 +3854,11 @@
     async function recalculateCart() {
       const items = Object.entries(cartState).map(([k, q]) => {
         const { productId, color } = parseCartKey(k);
-        const tier = selectedUnitTypes[productId] || 'loose';
+        const tier = selectedUnitTypes[productId] || globalPricingTier || 'loose';
         const customPrice = (customCartRates[k] !== undefined) ? customCartRates[k] : null;
         return {
           product_id: productId,
-          quantity: q,
+          quantity: parseFloat(q) || 0,
           unit_type: tier,
           color: color || '',
           unit_price: customPrice
@@ -3441,7 +3866,7 @@
       }).filter(i => i.quantity > 0);
 
       const bottomBar = document.getElementById('bottom-bar');
-      const totalCount = Object.values(cartState).reduce((a, b) => a + b, 0);
+      const totalCount = Math.round(Object.values(cartState).reduce((a, b) => a + (parseFloat(b) || 0), 0) * 100) / 100;
 
       if (items.length === 0) {
         bottomBar.classList.remove('visible');
@@ -3451,7 +3876,7 @@
       }
 
       bottomBar.classList.add('visible');
-      document.getElementById('bottom-items-count').innerText = `${totalCount} item${totalCount > 1 ? 's' : ''} in cart`;
+      document.getElementById('bottom-items-count').innerText = `${formatQty(totalCount)} item${totalCount !== 1 ? 's' : ''} in cart`;
 
       const { packingCharge, discountType, discountAmount, discountPercent } = getAdjustments();
       const { gstEnabled, gstRate } = getGstSettings();
@@ -3484,16 +3909,18 @@
           extraNote += ` - Disc: ₹${res.discount_amount.toFixed(2)}${pctTag}`;
         }
 
-        document.getElementById('bottom-total').innerText = `₹${res.total_amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        // Always show pure subtotal on the main page bottom bar (GST is only configured & toggled in Review modal)
+        document.getElementById('bottom-total').innerText = `₹${res.subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+        const gstNoteEl = document.getElementById('bottom-gst-note');
+        if (gstNoteEl) gstNoteEl.style.display = 'none';
 
         const isTaxActive = res.gst_enabled && (taxTotal > 0);
         if (!isTaxActive) {
-          document.getElementById('bottom-gst-note').innerText = `Subtotal: ₹${res.subtotal.toFixed(2)} (GST: None)${extraNote}`;
           document.getElementById('drawer-tax-label').innerText = `GST Tax:`;
           document.getElementById('drawer-tax-val').innerText = `₹0.00 (Exempt / Off)`;
         } else {
           const rateLabel = (res.gst_rate !== null && res.gst_rate !== undefined) ? ` (${res.gst_rate}%)` : '';
-          document.getElementById('bottom-gst-note').innerText = `Subtotal: ₹${res.subtotal.toFixed(2)} + ${taxType}${rateLabel}: ₹${taxTotal.toFixed(2)}${extraNote}`;
           document.getElementById('drawer-tax-label').innerText = `${taxType}${rateLabel} Tax:`;
           document.getElementById('drawer-tax-val').innerText = `₹${taxTotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
         }
@@ -3505,7 +3932,7 @@
         const phase1SavingsAmount = document.getElementById('phase1-savings-amount');
         const btnResetAll = document.getElementById('btn-reset-all-prices');
 
-        if (phase1Count) phase1Count.innerText = `${totalCount} item${totalCount > 1 ? 's' : ''} (${res.lines.length} product${res.lines.length > 1 ? 's' : ''})`;
+        if (phase1Count) phase1Count.innerText = `${formatQty(totalCount)} item${totalCount !== 1 ? 's' : ''} (${res.lines.length} product${res.lines.length > 1 ? 's' : ''})`;
         if (phase1Subtotal) phase1Subtotal.innerText = `₹${res.subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
 
         let totalNegotiatedSavings = 0;
@@ -3531,7 +3958,7 @@
         // Update Phase 2 Glance bar
         const glanceSummary = document.getElementById('glance-item-summary');
         if (glanceSummary) {
-          glanceSummary.innerText = `${totalCount} item${totalCount > 1 ? 's' : ''} • ₹${res.subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+          glanceSummary.innerText = `${formatQty(totalCount)} item${totalCount !== 1 ? 's' : ''} • ₹${res.subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
         }
 
         // Update Phase 2 Drawer summary
@@ -3639,7 +4066,7 @@
                 <div class="cart-item-name">${line.name} ${colorBadge}</div>
                 <div style="display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; flex-wrap: wrap;">
                   ${grpInfo}
-                  <span class="unit-type-pill">📦 ${line.unit_type}</span>
+                  <span class="unit-type-pill">📦 ${line.unit_type === 'carton' ? 'Gross' : line.unit_type}</span>
                   <span>• Catalog Price: <b>₹${standardRate.toFixed(2)}</b></span>
                 </div>
               </div>
@@ -3647,7 +4074,9 @@
               <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
                 <div class="stepper">
                   <button type="button" class="stepper-btn" onclick="updateCartItemQty(${line.product_id}, '${safeColor}', -1)">−</button>
-                  <span class="stepper-val">${qty}</span>
+                  <input type="number" step="any" min="0" class="stepper-input" style="width: 52px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-weight: 700; text-align: center; font-size: 0.85rem; padding: 2px 0;" 
+                         value="${qty}" 
+                         onchange="setCartItemDirectQty(${line.product_id}, '${safeColor}', this.value)" />
                   <button type="button" class="stepper-btn" onclick="updateCartItemQty(${line.product_id}, '${safeColor}', 1)">+</button>
                 </div>
                 <button type="button" class="btn-remove-item" onclick="removeCartItemCompletely(${line.product_id}, '${safeColor}')" title="Remove item">🗑️</button>
@@ -3736,11 +4165,11 @@
     async function submitOrder() {
       const items = Object.entries(cartState).map(([k, q]) => {
         const { productId, color } = parseCartKey(k);
-        const tier = selectedUnitTypes[productId] || 'loose';
+        const tier = selectedUnitTypes[productId] || globalPricingTier || 'loose';
         const customPrice = (customCartRates[k] !== undefined) ? customCartRates[k] : null;
         return {
           product_id: productId,
-          quantity: q,
+          quantity: parseFloat(q) || 0,
           unit_type: tier,
           color: color || '',
           unit_price: customPrice
@@ -3839,6 +4268,12 @@
         } else {
           pdfLink.innerText = (res.gst_enabled === false) ? '📄 Download Invoice PDF' : '📄 Download Tax Invoice PDF';
         }
+
+        const imgLink = document.getElementById('modal-image-link');
+        if (imgLink) {
+          imgLink.href = res.image_url || `/api/orders/${res.order_id}/image`;
+        }
+
         document.getElementById('success-modal').classList.add('active');
       } catch (err) {
         alert("Error placing order: " + err.message);
@@ -3888,11 +4323,14 @@
               ${(!o.hide_product_rate && o.discount_amount > 0) ? `<span style="font-size: 0.75rem; color: var(--success);"> (-₹${o.discount_amount} off)</span>` : ''}
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <a href="${o.pdf_url}" target="_blank" class="btn-icon" style="flex: 1; min-width: 95px; justify-content: center; text-decoration: none; font-size: 0.78rem;">
-                📄 View PDF
+              <a href="${o.pdf_url}" target="_blank" class="btn-icon" style="flex: 1; min-width: 80px; justify-content: center; text-decoration: none; font-size: 0.78rem;">
+                📄 PDF
               </a>
-              <button class="btn-icon btn-whatsapp-sm" style="flex: 1.3; min-width: 130px; justify-content: center; font-size: 0.78rem;" onclick="shareOrderViaWhatsAppById(${o.id})">
-                📲 WHATSAPP INVOICE
+              <a href="${o.image_url || '/api/orders/' + o.id + '/image'}" target="_blank" class="btn-icon" style="flex: 1; min-width: 85px; justify-content: center; text-decoration: none; font-size: 0.78rem; border-color: #38bdf8; color: #38bdf8;">
+                🖼️ Photo
+              </a>
+              <button class="btn-icon btn-whatsapp-sm" style="flex: 1.3; min-width: 120px; justify-content: center; font-size: 0.78rem;" onclick="shareOrderViaWhatsAppById(${o.id})">
+                📲 WHATSAPP
               </button>
               <button class="btn-icon" style="flex: 0.8; min-width: 70px; justify-content: center; border-color: var(--accent); color: var(--accent); font-size: 0.78rem;" onclick="openEditOrderModal(${o.id})">
                 ✏️ Edit
@@ -4097,7 +4535,7 @@
                 <div class="cart-item-name">${item.name} ${colorBadge}</div>
                 <div style="display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; flex-wrap: wrap;">
                   ${grpInfo}
-                  <span class="unit-type-pill">📦 ${item.unit_type}</span>
+                  <span class="unit-type-pill">📦 ${item.unit_type === 'carton' || item.unit_type === 'full_carton' ? 'Gross' : item.unit_type}</span>
                   <span>• Catalog Price: <b>₹${standardRate.toFixed(2)}</b></span>
                 </div>
               </div>
@@ -4105,7 +4543,9 @@
               <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
                 <div class="stepper">
                   <button type="button" class="stepper-btn" onclick="updateEditItemQty(${idx}, -1)">−</button>
-                  <span class="stepper-val">${qty}</span>
+                  <input type="number" step="any" min="0" class="stepper-input" style="width: 52px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-weight: 700; text-align: center; font-size: 0.85rem; padding: 2px 0;" 
+                         value="${qty}" 
+                         onchange="setEditItemDirectQty(${idx}, this.value)" />
                   <button type="button" class="stepper-btn" onclick="updateEditItemQty(${idx}, 1)">+</button>
                 </div>
                 <button type="button" class="btn-remove-item" onclick="removeEditItem(${idx})" title="Remove item from order">🗑️</button>
@@ -4235,8 +4675,19 @@
       renderEditOrderItems();
     }
 
+    function setEditItemDirectQty(idx, val) {
+      const num = parseFloat(val);
+      if (isNaN(num) || num <= 0) {
+        currentEditingItems.splice(idx, 1);
+      } else {
+        currentEditingItems[idx].quantity = Math.round(num * 100) / 100;
+      }
+      renderEditOrderItems();
+    }
+
     function updateEditItemQty(idx, change) {
-      const next = Math.max(0, currentEditingItems[idx].quantity + change);
+      const cur = parseFloat(currentEditingItems[idx].quantity) || 0;
+      const next = Math.max(0, Math.round((cur + change) * 100) / 100);
       if (next === 0) {
         currentEditingItems.splice(idx, 1);
       } else {
@@ -4272,7 +4723,7 @@
       const p1SavingsAmt = document.getElementById('edit-phase1-savings-amount');
       const btnResetAll = document.getElementById('btn-edit-reset-all-prices');
 
-      if (p1Count) p1Count.innerText = `${totalQty} item${totalQty > 1 ? 's' : ''} (${currentEditingItems.length} product${currentEditingItems.length > 1 ? 's' : ''})`;
+      if (p1Count) p1Count.innerText = `${formatQty(totalQty)} item${totalQty !== 1 ? 's' : ''} (${currentEditingItems.length} product${currentEditingItems.length > 1 ? 's' : ''})`;
       if (p1Sub) p1Sub.innerText = `₹${subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
 
       if (p1SavingsRow && p1SavingsAmt) {
@@ -4440,6 +4891,41 @@
       searchInput.value = '';
       clearBtn.style.display = 'none';
       renderCatalog();
+    }
+
+    // Keyboard and Swipe Support for Modal Product Carousel
+    document.addEventListener('keydown', (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+
+      const modal = document.getElementById('product-modal');
+      const isModalOpen = modal && modal.classList.contains('active');
+      if (isModalOpen) {
+        if (e.key === 'ArrowLeft') {
+          navigateModalProduct(-1);
+        } else if (e.key === 'ArrowRight') {
+          navigateModalProduct(1);
+        } else if (e.key === 'Escape') {
+          closeProductModal();
+        }
+      }
+    });
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+    function initCarouselGestures() {
+      const visualBox = document.getElementById('pm-visual-box');
+      if (!visualBox) return;
+      visualBox.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+      visualBox.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        const diff = touchEndX - touchStartX;
+        if (Math.abs(diff) > 40) {
+          if (diff > 0) navigateModalProduct(-1);
+          else navigateModalProduct(1);
+        }
+      }, { passive: true });
     }
 
     // Start

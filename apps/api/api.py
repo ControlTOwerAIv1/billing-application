@@ -10,7 +10,7 @@ import requests
 from django.http import HttpResponse
 from apps.core.models import Customer, Product, Order, OrderItem, OrderStatus, Transport
 from backend.config import TELEGRAM_BOT_TOKEN
-from backend.invoice_generator import generate_order_pdf_bytes
+from backend.invoice_generator import generate_order_pdf_bytes, generate_order_image_bytes
 
 api = NinjaAPI(title="OrderBot Django API", version="1.0.0")
 
@@ -50,7 +50,7 @@ class CreateCustomerSchema(Schema):
 
 class CartItemInput(Schema):
     product_id: int
-    quantity: int
+    quantity: float
     unit_type: Optional[str] = "loose"
     color: Optional[str] = ""
     unit_price: Optional[float] = None
@@ -153,47 +153,20 @@ def format_whatsapp_phone(phone: Optional[str]) -> str:
     return digits
 
 def generate_whatsapp_invoice_data(order: Order, request=None) -> dict:
-    """Constructs clean WhatsApp invoice text, phone number, and direct wa.me link for an order."""
+    """Constructs clean WhatsApp invoice details with photo image URL and phone link."""
     customer = order.customer
     phone = format_whatsapp_phone(customer.phone if customer else "")
     
     if request:
+        image_url = request.build_absolute_uri(f"/api/orders/{order.id}/image")
         pdf_url = request.build_absolute_uri(f"/api/orders/{order.id}/pdf")
     else:
+        image_url = f"http://127.0.0.1:8000/api/orders/{order.id}/image"
         pdf_url = f"http://127.0.0.1:8000/api/orders/{order.id}/pdf"
         
-    date_str = order.created_at.strftime("%d %b %Y, %I:%M %p") if order.created_at else ""
-    item_count = order.items.count()
-    
-    doc_type = "DELIVERY CHALLAN / ESTIMATE" if order.hide_product_rate else "COMMERCIAL ESTIMATE / INVOICE"
-    
-    lines = [
-        f"🧾 *{doc_type}*",
-        f"━━━━━━━━━━━━━━━━━━",
-        f"📦 *Voucher #:* #{order.voucher_no}",
-        f"👤 *Customer:* {customer.name if customer else 'Customer'}",
-    ]
-    if date_str:
-        lines.append(f"📅 *Date:* {date_str}")
-        
-    lines.append(f"📦 *Total Distinct Items:* {item_count}")
-    
-    if not order.hide_product_rate:
-        lines.append(f"💰 *Grand Total:* ₹{float(order.total_amount):,.2f}")
-    else:
-        total_qty = sum(item.quantity for item in order.items.all())
-        lines.append(f"📦 *Total Quantity:* {total_qty} units (Rates Withheld)")
-        
-    if getattr(order, 'notes', None) and order.notes.strip():
-        lines.append(f"📝 *Note:* {order.notes.strip()}")
-        
-    lines.append(f"━━━━━━━━━━━━━━━━━━")
-    lines.append(f"📄 *Download / View PDF:*")
-    lines.append(pdf_url)
-    lines.append(f"\n_Thank you for your business!_\n*HINDUSTAN PLAST*")
-    
-    message_text = "\n".join(lines)
-    whatsapp_url = f"https://wa.me/{phone}?text={urllib.parse.quote(message_text)}" if phone else ""
+    # Text message removed per user instruction ("in whatsapp there is a TEXT message sent along with pdf remove the text message")
+    message_text = ""
+    whatsapp_url = f"https://wa.me/{phone}" if phone else ""
     
     return {
         "phone": phone,
@@ -202,6 +175,7 @@ def generate_whatsapp_invoice_data(order: Order, request=None) -> dict:
         "voucher_no": order.voucher_no,
         "message_text": message_text,
         "whatsapp_url": whatsapp_url,
+        "image_url": image_url,
         "pdf_url": pdf_url
     }
 
@@ -579,6 +553,7 @@ def submit_order(request, payload: SubmitOrderInput):
         "discount_percent": price_res.get("discount_percent"),
         "total_amount": float(order.total_amount),
         "pdf_url": pdf_url,
+        "image_url": f"/api/orders/{order.id}/image",
         "message": f"Order #{order.voucher_no} placed successfully!"
     }
 
@@ -599,7 +574,7 @@ def list_orders(request, customer_id: Optional[int] = None, status: Optional[str
                 "product_name": item.product.name,
                 "sku": item.product.sku,
                 "unit_type": item.unit_type,
-                "quantity": item.quantity,
+                "quantity": float(item.quantity) if isinstance(item.quantity, Decimal) else item.quantity,
                 "unit_price": float(item.unit_price),
                 "total_amount": float(item.total_amount)
             }
@@ -632,6 +607,7 @@ def list_orders(request, customer_id: Optional[int] = None, status: Optional[str
             "item_count": len(items_list),
             "items": items_list,
             "pdf_url": f"/api/orders/{o.id}/pdf",
+            "image_url": f"/api/orders/{o.id}/image",
             "created_at": o.created_at.strftime("%Y-%m-%d %H:%M") if o.created_at else ""
         })
 
@@ -653,7 +629,7 @@ def get_order_detail(request, order_id: int):
             "photo_url": item.product.photo_url or item.product.image_url or "",
             "unit_type": item.unit_type,
             "color": item.color or "",
-            "quantity": item.quantity,
+            "quantity": float(item.quantity) if isinstance(item.quantity, Decimal) else item.quantity,
             "unit_price": float(item.unit_price),
             "taxable_amount": float(item.taxable_amount),
             "total_amount": float(item.total_amount)
@@ -691,6 +667,7 @@ def get_order_detail(request, order_id: int):
         "discount_amount": float(order.discount_amount),
         "total_amount": float(order.total_amount),
         "pdf_url": f"/api/orders/{order.id}/pdf",
+        "image_url": f"/api/orders/{order.id}/image",
         "items": items_list
     }
 
@@ -804,6 +781,7 @@ def edit_order_api(request, order_id: int, payload: EditOrderInput):
         "balance_adjustment": float(diff),
         "customer_new_balance": float(cust.balance_amount),
         "pdf_url": f"/api/orders/{order.id}/pdf",
+        "image_url": f"/api/orders/{order.id}/image",
         "message": f"Order #{order.voucher_no} updated successfully!"
     }
 
@@ -817,9 +795,19 @@ def download_order_pdf(request, order_id: int):
     response["Content-Disposition"] = f'inline; filename="Invoice_{order.voucher_no}.pdf"'
     return response
 
+@api.get("/orders/{order_id}/image")
+@api.get("/orders/{order_id}/photo")
+def download_order_image(request, order_id: int):
+    """Generates and streams the PNG image invoice for a given order ID."""
+    order = get_object_or_404(Order.objects.prefetch_related("items__product", "customer"), id=order_id)
+    img_bytes = generate_order_image_bytes(order)
+    response = HttpResponse(img_bytes, content_type="image/png")
+    response["Content-Disposition"] = f'inline; filename="Invoice_{order.voucher_no}.png"'
+    return response
+
 @api.get("/orders/{order_id}/whatsapp")
 def get_order_whatsapp_data(request, order_id: int):
-    """Returns WhatsApp message text, customer phone, and direct wa.me link for the order."""
+    """Returns WhatsApp message text, customer phone, image url, and direct wa.me link for the order."""
     order = get_object_or_404(Order.objects.select_related("customer"), id=order_id)
     wa_data = generate_whatsapp_invoice_data(order, request=request)
     return {

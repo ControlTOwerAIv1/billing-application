@@ -122,16 +122,72 @@ class EstimatePDFFormatTestCase(TestCase):
         # Verify color details in single line
         self.assertIn("Color: red-2, blue-2, green-3", full_text)
 
+        # Verify COMMERCIAL ESTIMATE is removed and clean ESTIMATE is shown
+        self.assertNotIn("COMMERCIAL ESTIMATE", full_text)
+        self.assertNotIn("Goods once sold will not be taken back", full_text)
+        self.assertNotIn("computer-generated estimate", full_text)
+        self.assertIn("GST BILL REQUIRED: No", full_text)
+        self.assertNotIn("GSTIN: N/A", full_text)
+
         # Verify Qty, Rate, and Amount column headers and values
         self.assertIn("Qty", full_text)
         self.assertIn("Rate (Rs.)", full_text)
         self.assertIn("Amount (Rs.)", full_text)
-        # Product 1 qty: 7
-        self.assertIn("7", full_text)
-        # Product 2 carton qty display: "ctn"
-        self.assertIn("ctn", full_text)
+        # Product 2 gross qty display: "gross"
+        self.assertIn("gross", full_text)
 
         print("\n[OK] Estimate PDF format verified successfully with extracted text!")
+
+    def test_decimal_quantities_and_photo_invoice(self):
+        """Verify decimal quantities (0.25, 0.50, 0.75) and invoice image photo generation."""
+        from backend.invoice_generator import generate_order_image_bytes
+
+        order = Order.objects.create(
+            tenant=self.tenant,
+            customer=self.customer,
+            voucher_no="EST-DECIMAL-01",
+            status="placed",
+            gst_enabled=False
+        )
+        # 0.25 gross
+        OrderItem.objects.create(
+            order=order,
+            product=self.product1,
+            color="PL",
+            quantity=Decimal("0.25"),
+            unit_type="carton",
+            unit_price=Decimal("120.00"),
+            taxable_amount=Decimal("30.00"),
+            total_amount=Decimal("30.00")
+        )
+        # 0.75 gross
+        OrderItem.objects.create(
+            order=order,
+            product=self.product2,
+            color="Black",
+            quantity=Decimal("0.75"),
+            unit_type="carton",
+            unit_price=Decimal("200.00"),
+            taxable_amount=Decimal("150.00"),
+            total_amount=Decimal("150.00")
+        )
+        order.calculate_taxes_and_totals(tenant_state_code="08")
+
+        pdf_bytes = generate_order_pdf_bytes(order)
+        doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+        full_text = "\n".join(page.get_text() for page in doc)
+
+        self.assertIn("0.25", full_text)
+        self.assertIn("0.75", full_text)
+        self.assertIn("gross", full_text)
+        self.assertNotIn("COMMERCIAL ESTIMATE", full_text)
+        self.assertNotIn("Goods once sold", full_text)
+        self.assertIn("GST BILL REQUIRED: No", full_text)
+
+        img_bytes = generate_order_image_bytes(order)
+        self.assertIsNotNone(img_bytes)
+        self.assertTrue(img_bytes.startswith(b"\x89PNG"))
+        print("\n[OK] Decimal quantities (0.25, 0.75 gross) and Photo Invoice verified successfully!")
 
 if __name__ == "__main__":
     import unittest
