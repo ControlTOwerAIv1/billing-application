@@ -152,17 +152,33 @@ def format_whatsapp_phone(phone: Optional[str]) -> str:
         return "91" + digits[1:]
     return digits
 
+def get_url_prefix(request) -> str:
+    """Detects reverse-proxy URL prefixes (e.g., /hindustan-plast)."""
+    if not request:
+        return ""
+    prefix = request.META.get("HTTP_X_FORWARDED_PREFIX", "")
+    if prefix:
+        return prefix.rstrip("/")
+    referer = request.META.get("HTTP_REFERER", "")
+    if "/hindustan-plast" in referer:
+        return "/hindustan-plast"
+    full_path = getattr(request, "path", "") or request.get_full_path()
+    if "/hindustan-plast" in full_path:
+        return "/hindustan-plast"
+    return ""
+
 def generate_whatsapp_invoice_data(order: Order, request=None) -> dict:
     """Constructs clean WhatsApp invoice details with photo image URL and phone link."""
     customer = order.customer
     phone = format_whatsapp_phone(customer.phone if customer else "")
+    prefix = get_url_prefix(request)
     
     if request:
-        image_url = request.build_absolute_uri(f"/api/orders/{order.id}/image")
-        pdf_url = request.build_absolute_uri(f"/api/orders/{order.id}/pdf")
+        image_url = request.build_absolute_uri(f"{prefix}/api/orders/{order.id}/image")
+        pdf_url = request.build_absolute_uri(f"{prefix}/api/orders/{order.id}/pdf")
     else:
-        image_url = f"http://127.0.0.1:8000/api/orders/{order.id}/image"
-        pdf_url = f"http://127.0.0.1:8000/api/orders/{order.id}/pdf"
+        image_url = f"http://127.0.0.1:8000{prefix}/api/orders/{order.id}/image"
+        pdf_url = f"http://127.0.0.1:8000{prefix}/api/orders/{order.id}/pdf"
         
     # Text message removed per user instruction ("in whatsapp there is a TEXT message sent along with pdf remove the text message")
     message_text = ""
@@ -529,7 +545,8 @@ def submit_order(request, payload: SubmitOrderInput):
     if target_chat_id:
         send_telegram_order_notification(target_chat_id, order, action_label="Created")
 
-    pdf_url = f"/api/orders/{order.id}/pdf"
+    prefix = get_url_prefix(request)
+    pdf_url = f"{prefix}/api/orders/{order.id}/pdf"
     wa_data = generate_whatsapp_invoice_data(order, request=request)
 
     return {
@@ -553,13 +570,14 @@ def submit_order(request, payload: SubmitOrderInput):
         "discount_percent": price_res.get("discount_percent"),
         "total_amount": float(order.total_amount),
         "pdf_url": pdf_url,
-        "image_url": f"/api/orders/{order.id}/image",
+        "image_url": f"{prefix}/api/orders/{order.id}/image",
         "message": f"Order #{order.voucher_no} placed successfully!"
     }
 
 @api.get("/orders")
 def list_orders(request, customer_id: Optional[int] = None, status: Optional[str] = None):
     """Lists orders with optional customer and status filters."""
+    prefix = get_url_prefix(request)
     qs = Order.objects.select_related("customer", "transport", "customer__transport").all().order_by("-created_at")
     if customer_id:
         qs = qs.filter(customer_id=customer_id)
@@ -606,8 +624,8 @@ def list_orders(request, customer_id: Optional[int] = None, status: Optional[str
             "total_amount": float(o.total_amount),
             "item_count": len(items_list),
             "items": items_list,
-            "pdf_url": f"/api/orders/{o.id}/pdf",
-            "image_url": f"/api/orders/{o.id}/image",
+            "pdf_url": f"{prefix}/api/orders/{o.id}/pdf",
+            "image_url": f"{prefix}/api/orders/{o.id}/image",
             "created_at": o.created_at.strftime("%Y-%m-%d %H:%M") if o.created_at else ""
         })
 
@@ -616,6 +634,7 @@ def list_orders(request, customer_id: Optional[int] = None, status: Optional[str
 @api.get("/orders/{order_id}")
 def get_order_detail(request, order_id: int):
     """Gets complete details of an order."""
+    prefix = get_url_prefix(request)
     order = get_object_or_404(Order.objects.select_related("customer", "transport", "customer__transport"), id=order_id)
     items_list = [
         {
@@ -666,8 +685,8 @@ def get_order_detail(request, order_id: int):
         "packing_charge": float(order.packing_charge),
         "discount_amount": float(order.discount_amount),
         "total_amount": float(order.total_amount),
-        "pdf_url": f"/api/orders/{order.id}/pdf",
-        "image_url": f"/api/orders/{order.id}/image",
+        "pdf_url": f"{prefix}/api/orders/{order.id}/pdf",
+        "image_url": f"{prefix}/api/orders/{order.id}/image",
         "items": items_list
     }
 
@@ -780,8 +799,8 @@ def edit_order_api(request, order_id: int, payload: EditOrderInput):
         "total_amount": float(order.total_amount),
         "balance_adjustment": float(diff),
         "customer_new_balance": float(cust.balance_amount),
-        "pdf_url": f"/api/orders/{order.id}/pdf",
-        "image_url": f"/api/orders/{order.id}/image",
+        "pdf_url": f"{get_url_prefix(request)}/api/orders/{order.id}/pdf",
+        "image_url": f"{get_url_prefix(request)}/api/orders/{order.id}/image",
         "message": f"Order #{order.voucher_no} updated successfully!"
     }
 

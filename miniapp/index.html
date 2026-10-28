@@ -2740,7 +2740,27 @@
     if (tg) { tg.expand(); tg.ready(); }
 
     const urlParams = new URLSearchParams(window.location.search);
-    const customerId = urlParams.get('customer_id') || 1;
+    let customerId = urlParams.get('customer_id') ? parseInt(urlParams.get('customer_id')) : null;
+
+    // Subpath prefix detection for reverse-proxy deployments (e.g. /hindustan-plast)
+    const APP_PREFIX = window.location.pathname.includes('/miniapp')
+      ? window.location.pathname.substring(0, window.location.pathname.indexOf('/miniapp'))
+      : (window.location.pathname.startsWith('/hindustan-plast') ? '/hindustan-plast' : '');
+
+    function apiUrl(path) {
+      if (!path) return '';
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        if (APP_PREFIX && path.includes('/api/') && !path.includes(APP_PREFIX + '/api/')) {
+          return path.replace('/api/', APP_PREFIX + '/api/');
+        }
+        return path;
+      }
+      const cleanPath = path.startsWith('/') ? path : `/${path}`;
+      if (APP_PREFIX && cleanPath.startsWith(APP_PREFIX)) {
+        return cleanPath;
+      }
+      return `${APP_PREFIX}${cleanPath}`;
+    }
 
     let customerData = null;
     let catalogData = [];
@@ -2844,14 +2864,18 @@
     }
 
     // Default & Fallback Placeholder Images
-    const NO_IMAGE_AVAILABLE = "/media/no_image_available.png";
+    const NO_IMAGE_AVAILABLE = apiUrl("/media/no_image_available.png");
     const DEFAULT_IMG = NO_IMAGE_AVAILABLE;
 
     async function initApp() {
       try {
-        const resp = await fetch(`/api/cart/init?customer_id=${customerId}`);
+        const initUrl = customerId ? apiUrl(`/api/cart/init?customer_id=${customerId}`) : apiUrl('/api/cart/init');
+        const resp = await fetch(initUrl);
         const data = await resp.json();
         customerData = data.customer;
+        if (customerData && customerData.id) {
+          customerId = customerData.id;
+        }
         catalogData = data.catalog;
         availableTransports = data.transports || [];
 
@@ -3607,7 +3631,7 @@
 
     async function shareOrderViaWhatsAppById(orderId) {
       try {
-        const resp = await fetch(`/api/orders/${orderId}/whatsapp`);
+        const resp = await fetch(apiUrl(`/api/orders/${orderId}/whatsapp`));
         const data = await resp.json();
         if (data.status === 'success') {
           await executeWhatsAppShare(data);
@@ -3634,7 +3658,8 @@
         phone = formatWhatsAppPhone(inputPhone);
       }
 
-      const imageUrl = orderInfo.image_url || (orderInfo.order_id ? `/api/orders/${orderInfo.order_id}/image` : '');
+      const rawImgUrl = orderInfo.image_url || (orderInfo.order_id ? `/api/orders/${orderInfo.order_id}/image` : '');
+      const imageUrl = rawImgUrl ? apiUrl(rawImgUrl) : '';
       let fullImageUrl = imageUrl;
       if (fullImageUrl && !fullImageUrl.startsWith('http')) {
         fullImageUrl = `${window.location.origin}${fullImageUrl}`;
@@ -3882,11 +3907,12 @@
       const { gstEnabled, gstRate } = getGstSettings();
 
       try {
-        const resp = await fetch('/api/cart/price', {
+        const cid = (customerData && customerData.id) ? customerData.id : customerId;
+        const resp = await fetch(apiUrl('/api/cart/price'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            customer_id: parseInt(customerId),
+            customer_id: cid ? parseInt(cid) : undefined,
             items: items,
             packing_charge: packingCharge,
             discount_type: discountType,
@@ -3897,6 +3923,10 @@
           })
         });
         const res = await resp.json();
+        if (!resp.ok || !res || !res.lines) {
+          console.error("Pricing API Error:", res);
+          return;
+        }
         cachedPricingLines = res.lines || [];
 
         const taxTotal = (res.cgst_amount || 0) + (res.sgst_amount || 0) + (res.igst_amount || 0);
@@ -4189,11 +4219,12 @@
       const hideProductRate = document.getElementById('toggle-hide-rate-switch')?.checked || false;
 
       try {
-        const resp = await fetch('/api/cart/submit', {
+        const cid = (customerData && customerData.id) ? customerData.id : customerId;
+        const resp = await fetch(apiUrl('/api/cart/submit'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            customer_id: parseInt(customerId),
+            customer_id: cid ? parseInt(cid) : undefined,
             items: items,
             chat_id: chatId ? parseInt(chatId) : null,
             notes: orderNote,
@@ -4262,16 +4293,18 @@
         }
 
         const pdfLink = document.getElementById('modal-pdf-link');
-        pdfLink.href = res.pdf_url;
-        if (res.hide_product_rate) {
-          pdfLink.innerText = '📄 Download PDF (No Prices)';
-        } else {
-          pdfLink.innerText = (res.gst_enabled === false) ? '📄 Download Invoice PDF' : '📄 Download Tax Invoice PDF';
+        if (pdfLink) {
+          pdfLink.href = apiUrl(res.pdf_url || `/api/orders/${res.order_id}/pdf`);
+          if (res.hide_product_rate) {
+            pdfLink.innerText = '📄 Download PDF (No Prices)';
+          } else {
+            pdfLink.innerText = (res.gst_enabled === false) ? '📄 Download Invoice PDF' : '📄 Download Tax Invoice PDF';
+          }
         }
 
         const imgLink = document.getElementById('modal-image-link');
         if (imgLink) {
-          imgLink.href = res.image_url || `/api/orders/${res.order_id}/image`;
+          imgLink.href = apiUrl(res.image_url || `/api/orders/${res.order_id}/image`);
         }
 
         document.getElementById('success-modal').classList.add('active');
@@ -4295,7 +4328,9 @@
       container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px;">Loading your orders...</div>`;
 
       try {
-        const resp = await fetch(`/api/orders?customer_id=${customerId}`);
+        const cid = (customerData && customerData.id) ? customerData.id : customerId;
+        const ordersUrl = cid ? apiUrl(`/api/orders?customer_id=${cid}`) : apiUrl('/api/orders');
+        const resp = await fetch(ordersUrl);
         const res = await resp.json();
         const orders = res.orders || [];
 
@@ -4323,10 +4358,10 @@
               ${(!o.hide_product_rate && o.discount_amount > 0) ? `<span style="font-size: 0.75rem; color: var(--success);"> (-₹${o.discount_amount} off)</span>` : ''}
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <a href="${o.pdf_url}" target="_blank" class="btn-icon" style="flex: 1; min-width: 80px; justify-content: center; text-decoration: none; font-size: 0.78rem;">
+              <a href="${apiUrl(o.pdf_url || ('/api/orders/' + o.id + '/pdf'))}" target="_blank" class="btn-icon" style="flex: 1; min-width: 80px; justify-content: center; text-decoration: none; font-size: 0.78rem;">
                 📄 PDF
               </a>
-              <a href="${o.image_url || '/api/orders/' + o.id + '/image'}" target="_blank" class="btn-icon" style="flex: 1; min-width: 85px; justify-content: center; text-decoration: none; font-size: 0.78rem; border-color: #38bdf8; color: #38bdf8;">
+              <a href="${apiUrl(o.image_url || ('/api/orders/' + o.id + '/image'))}" target="_blank" class="btn-icon" style="flex: 1; min-width: 85px; justify-content: center; text-decoration: none; font-size: 0.78rem; border-color: #38bdf8; color: #38bdf8;">
                 🖼️ Photo
               </a>
               <button class="btn-icon btn-whatsapp-sm" style="flex: 1.3; min-width: 120px; justify-content: center; font-size: 0.78rem;" onclick="shareOrderViaWhatsAppById(${o.id})">
@@ -4424,7 +4459,7 @@
     async function openEditOrderModal(orderId) {
       currentEditingOrderId = orderId;
       try {
-        const resp = await fetch(`/api/orders/${orderId}`);
+        const resp = await fetch(apiUrl(`/api/orders/${orderId}`));
         const data = await resp.json();
 
         currentEditingOrderVoucher = data.voucher_no || `${orderId}`;
@@ -4846,7 +4881,7 @@
       const editGstEnabled = isToggleChecked && rawRate !== '' && editGstRate > 0;
 
       try {
-        const resp = await fetch(`/api/orders/${currentEditingOrderId}/edit`, {
+        const resp = await fetch(apiUrl(`/api/orders/${currentEditingOrderId}/edit`), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
